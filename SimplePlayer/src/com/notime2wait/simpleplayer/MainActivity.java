@@ -415,4 +415,11 @@ public class MainActivity extends FragmentActivity
             mPlayer.release();
         }
     }
+    /*
+    @Override
+    public void onDestroy() {
+    	super.onDestroy();
+    	mMusicData.erasePlaylistHistory();
+		  stopMusic();
+	  }*/
 }

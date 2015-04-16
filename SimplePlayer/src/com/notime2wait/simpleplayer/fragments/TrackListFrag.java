@@ -59,7 +59,7 @@ public class TrackListFrag extends ListFragment{
 	//private IPlaylist<Track> mHomePlaylist;
 	private MusicData mMusicData;
 	private DragSortController mController;
-	
+	private boolean mHistoryButtonFlag = true; //required to reduce unnecessary moves by iterator when switching direction
 	
 	private View mHeaderView;
 	private EditText mPlaylistName;
@@ -108,7 +108,12 @@ public class TrackListFrag extends ListFragment{
 			 public void onClick(View v) {
 				 	//mPlaylistHistory.add(mPlaylist);
 			      //show message
+				 
 				    ((DragSortListView)getListView()).unregisterObserver(mAdapter);
+				    if (!mHistoryButtonFlag){
+						 mPlaylistHistory.previous();
+						 mHistoryButtonFlag = true;
+					 }
 				 	mPlaylist = mPlaylistHistory.previous();
 				 	mMusicData.setHistoryIndex(mMusicData.getHistoryIndex()-1);
 				 	//mPlaylistHistory.remove();
@@ -129,6 +134,10 @@ public class TrackListFrag extends ListFragment{
 			      //show message
 
 				 	((DragSortListView)getListView()).unregisterObserver(mAdapter);
+				 	if (mHistoryButtonFlag){
+						 mPlaylistHistory.next();
+						 mHistoryButtonFlag = false;
+					 }
 				 	mPlaylist = mPlaylistHistory.next();
 				 	mMusicData.setHistoryIndex(mMusicData.getHistoryIndex()+1);
 				 	if (mTracklistPrev.getVisibility() == View.INVISIBLE)
@@ -144,7 +153,9 @@ public class TrackListFrag extends ListFragment{
 		
 		try{
 			mTracklistNext.setVisibility(mPlaylistHistory.hasNext()? View.VISIBLE : View.INVISIBLE);
+			if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()) mTracklistNext.setVisibility(View.INVISIBLE);
 			mTracklistPrev.setVisibility(mPlaylistHistory.hasPrevious()? View.VISIBLE : View.INVISIBLE);
+			if (mMusicData.getHistoryIndex()==mPlaylistHistory.previousIndex()) mTracklistPrev.setVisibility(View.INVISIBLE);
 		} catch (ConcurrentModificationException e) {
 			e.printStackTrace();
 			prepareHistoryIterator();

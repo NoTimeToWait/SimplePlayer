@@ -52,7 +52,7 @@ public class MusicData {
 	private Playlist mCurrentPlaylist = new Playlist();
 	private int HISTORY_LEN = 20;
 	private LinkedList<IPlaylist<Track>> mPlaylistHistory = new LinkedList<IPlaylist<Track>>();
-	private int mHistoryIndex = 0;
+	private int mHistoryIndex = -1;
 	//TODO: add current playlist int num
 	//private int mCurrentTrackIndex;
 	
@@ -66,12 +66,18 @@ public class MusicData {
 	}
 	
 	public ListIterator<IPlaylist<Track>> getPlaylistHistory() {
-		return mPlaylistHistory.listIterator(mHistoryIndex/*TODO: Add here current playlist num*/);
+		if (MainActivity.DEBUG) Log.e("Iterator", "HistoryListLen="+mPlaylistHistory.size()+"HistoryIndex="+mHistoryIndex);
+		return  mPlaylistHistory.listIterator(mHistoryIndex<0? 0 : mHistoryIndex);
 		/*TODO: Add here current playlist if num is out of bounds*/
 	}
 	
 	public int getHistoryIndex() {
 		return mHistoryIndex;
+	}
+	
+	public void erasePlaylistHistory(){
+		mHistoryIndex=-1;
+		mPlaylistHistory = new LinkedList<IPlaylist<Track>>();
 	}
 	
 	public void setHistoryIndex(int index) {
@@ -214,6 +220,7 @@ public class MusicData {
 		mCurrentPlaylist.add(mTracks[trackNum]);
 		mCurrentPlaylist.setCurrentTrackIndex(0); //0 means that current track is the first track
 		mPlaylistHistory.addLast(mCurrentPlaylist);
+		mHistoryIndex++;
 		return mMainActivity.playTrack(mTracks[trackNum]);
 	}
 	/*
@@ -222,7 +229,12 @@ public class MusicData {
 		//mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
 		return mMainActivity.playTrack(track);
 	}*/
-	
+	/**
+	 * to call from tracklist frag
+	 * @param trackPosition
+	 * @param track
+	 * @return
+	 */
 	public boolean playTrack(int trackPosition, Track track) {
 
 		mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
@@ -245,6 +257,7 @@ public class MusicData {
 		mCurrentPlaylist.add(folder_tracks);
 		mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
 		mPlaylistHistory.addLast(mCurrentPlaylist);
+		mHistoryIndex++;
 		return mMainActivity.playTrack(mTracks[track_offset+trackPosition]);
 	}
 	
