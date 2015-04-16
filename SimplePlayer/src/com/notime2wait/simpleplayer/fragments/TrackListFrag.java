@@ -160,7 +160,9 @@ public class TrackListFrag extends ListFragment{
 			e.printStackTrace();
 			prepareHistoryIterator();
 			mTracklistNext.setVisibility(mPlaylistHistory.hasNext()? View.VISIBLE : View.INVISIBLE);
+			if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()) mTracklistNext.setVisibility(View.INVISIBLE);
 			mTracklistPrev.setVisibility(mPlaylistHistory.hasPrevious()? View.VISIBLE : View.INVISIBLE);
+			if (mMusicData.getHistoryIndex()==mPlaylistHistory.previousIndex()) mTracklistPrev.setVisibility(View.INVISIBLE);
 		}
 		return true;
 	}
@@ -318,6 +320,7 @@ public class TrackListFrag extends ListFragment{
 		    	if (MainActivity.DEBUG) Log.e(LOG_TAG, "remove pos:"+position+"current pos:"+currentPlayingTrack);
 		    	mPlaylist.remove(position); //changes current track index in its method declaration
 		    	//mAdapter.notifyDataSetChanged();
+		    	if (!isHomePlaylist()) return;
 		    	if (mPlaylist.getCurrentTrackIndex()==-1) {
 		    		mMusicData.stopMusic();
 		    		return;
@@ -347,6 +350,7 @@ public class TrackListFrag extends ListFragment{
 			  setListAdapter(null);
 			  initialized = false;
 			  mPlaylist = null;
+			  mHistoryButtonFlag = true;
 			  //mHomePlaylist = null;
 		  }
 }

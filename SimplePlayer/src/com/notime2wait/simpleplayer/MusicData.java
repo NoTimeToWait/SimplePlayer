@@ -84,6 +84,11 @@ public class MusicData {
 		mHistoryIndex = index;
 	}
 	
+	public boolean isHomePlaylist(){
+		if (mPlaylistHistory.isEmpty()) return true;
+		return mCurrentPlaylist.equals(mPlaylistHistory.get(mHistoryIndex<0? 0:mHistoryIndex));
+	}
+	
 	public String[] getFolders() {
 		return mFolders;
 	}
@@ -220,7 +225,7 @@ public class MusicData {
 		mCurrentPlaylist.add(mTracks[trackNum]);
 		mCurrentPlaylist.setCurrentTrackIndex(0); //0 means that current track is the first track
 		mPlaylistHistory.addLast(mCurrentPlaylist);
-		mHistoryIndex++;
+		mHistoryIndex = mPlaylistHistory.size()-1;
 		return mMainActivity.playTrack(mTracks[trackNum]);
 	}
 	/*
@@ -257,7 +262,7 @@ public class MusicData {
 		mCurrentPlaylist.add(folder_tracks);
 		mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
 		mPlaylistHistory.addLast(mCurrentPlaylist);
-		mHistoryIndex++;
+		mHistoryIndex = mPlaylistHistory.size()-1;
 		return mMainActivity.playTrack(mTracks[track_offset+trackPosition]);
 	}
 	
@@ -337,26 +342,22 @@ public class MusicData {
 			});
 			
 			if (MainActivity.DEBUG) Log.e("Track remove1", " pos1 ="+position+"mCurrentTrackIndex:"+mCurrentTrackIndex);
-			if ((position==mCurrentTrackIndex && position==playlist.size()-1)||
-				(position < mCurrentTrackIndex)) {
+			if (((position==mCurrentTrackIndex && position==playlist.size()-1)||
+				(position < mCurrentTrackIndex))&&isHomePlaylist()) {
 					mCurrentTrackIndex--;
-
-					if (MainActivity.DEBUG) Log.e("Track remove:shift current track index", " mCurrentTrackIndex ="+mCurrentTrackIndex);
 			}
 			if (MainActivity.DEBUG) Log.e("Track remove2", " pos1 ="+position+"mCurrentTrackIndex:"+mCurrentTrackIndex);
-			 
 			Track item = playlist.remove(position);
-			if (MainActivity.DEBUG) Log.e("Track remove3", " pos1 ="+position+"mCurrentTrackIndex:"+mCurrentTrackIndex);
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
-			if (MainActivity.DEBUG) Log.e("Track remove4", " pos1 ="+position+"mCurrentTrackIndex:"+mCurrentTrackIndex);
 			return item;
 		}
 		
 		public boolean add( int position, Track item) {
 			if (MainActivity.DEBUG) Log.e("Track remove:undo add0", " mCurrentTrackIndex ="+mCurrentTrackIndex);
-			
-			if (position<=mCurrentTrackIndex) mCurrentTrackIndex++;
-			if (mCurrentTrackIndex<0) mCurrentTrackIndex=0;
+			if (isHomePlaylist()) {
+				if (position<=mCurrentTrackIndex) mCurrentTrackIndex++;
+				if (mCurrentTrackIndex<0) mCurrentTrackIndex=0;
+			}
 			playlist.add(position, item);
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
 			if (MainActivity.DEBUG) Log.e("Track remove:undo add1", " mCurrentTrackIndex ="+mCurrentTrackIndex);
@@ -364,7 +365,7 @@ public class MusicData {
 		}
 		
 		public boolean add(Track track) {
-			if (mCurrentTrackIndex<0) mCurrentTrackIndex=0;
+			if (isHomePlaylist()&&mCurrentTrackIndex<0) mCurrentTrackIndex=0;
 			playlist.add(track);
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
 			return true;
@@ -380,9 +381,11 @@ public class MusicData {
 		@Override
 		public void move(int from, int to) {
 			if (from==to) return;
-			if (from<mCurrentTrackIndex && to>=mCurrentTrackIndex) mCurrentTrackIndex--;
-			else if (from == mCurrentTrackIndex) mCurrentTrackIndex = to;
-			else if (from>mCurrentTrackIndex && to<=mCurrentTrackIndex) mCurrentTrackIndex++;
+			if (isHomePlaylist()) {
+				if (from<mCurrentTrackIndex && to>=mCurrentTrackIndex) mCurrentTrackIndex--;
+				else if (from == mCurrentTrackIndex) mCurrentTrackIndex = to;
+				else if (from>mCurrentTrackIndex && to<=mCurrentTrackIndex) mCurrentTrackIndex++;
+			}
 			Track item = playlist.remove(from);
 			playlist.add(to, item);
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
