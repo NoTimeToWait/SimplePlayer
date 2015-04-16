@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal" >
+    
+    <ImageButton
+        android:id="@+id/btn_tracklist_prev"
+		android:layout_marginLeft="4dp"
+        android:layout_width="wrap_content"
+        android:layout_height="16dp"
+        android:layout_gravity="center_vertical"
+        android:text="Prev" >
+        
+    </ImageButton>
+
+    <EditText
+        android:id="@+id/tracklist_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_weight="1"
+        android:inputType="textNoSuggestions"
+        android:maxEms="64"
+        android:singleLine="true" >
+
+        <requestFocus />
+    </EditText>
+    
+	<ImageButton
+	    android:id="@+id/btn_tracklist_next"
+	    android:layout_width="wrap_content"
+	    android:layout_height="16dp"
+	    android:layout_gravity="center_vertical"
+	    android:text="Next" >
+        
+    </ImageButton>
+    
+    <View
+			android:layout_weight="0"
+			android:layout_marginRight="8dp"
+			android:layout_marginLeft="8dp"
+			android:layout_marginTop="15dp"
+			android:layout_marginBottom="15dp"
+			android:layout_width="1dp"
+			android:layout_height="36dp"
+			android:layout_gravity="center_vertical"
+			android:background="@color/popup_separator"/>
+    
+	<ImageButton
+	    android:id="@+id/btn_tracklist_save"
+	    
+		android:layout_marginRight="16dp"
+	    android:layout_width="wrap_content"
+	    android:layout_height="32dp"
+	    android:layout_gravity="center_vertical"
+	    android:text="Save" >
+        
+    </ImageButton>
+</LinearLayout>

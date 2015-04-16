@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">SimplePlayer</string>
+    <string name="action_settings">Settings</string>
+    
+    <string name="default_undo_message">Undo previous action</string>
+    <string name="undo">Undo</string>
+    <string name="undo_all">Undo All</string>
+    <string name="item_deleted">Item deleted</string>
+
+</resources>

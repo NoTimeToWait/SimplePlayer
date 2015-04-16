@@ -1,0 +1,57 @@
+<!--<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+ xmlns:android="http://schemas.android.com/apk/res/android"
+ xmlns:tools="http://schemas.android.com/tools"
+ android:id="@+id/LinearLayout1"
+ android:layout_width="match_parent"
+ android:layout_height="match_parent"
+ android:orientation="vertical">
+<fragment
+    
+ android:id="@+id/MainList"
+ android:name="ru.startandroid.develop.p1091listfragment.MainList"
+ android:layout_width="match_parent"
+ android:layout_height="match_parent">
+</fragment>
+</LinearLayout>-->
+
+ <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/stickylist_frag"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+	
+    <se.emilsjolander.stickylistheaders.StickyListHeadersListView
+        android:id="@+id/list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        />
+  <!--  
+ 	 android:clipToPadding="false"
+        
+        
+        
+        android:padding="16dp"
+  		android:scrollbarStyle="outsideOverlay"
+        android:drawSelectorOnTop="true"
+        android:fastScrollEnabled="true"
+  		android:clipToPadding="false"
+        style = "@style/AppTheme"
+        android:scrollbarStyle="outsideOverlay"
+        android:drawSelectorOnTop="true"
+        
+        android:padding="16dp"
+     -->    
+     
+
+    <TextView
+        android:id="@+id/empty"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="No data"
+        android:textSize="30sp"
+        android:visibility="gone" />
+
+</FrameLayout>
+

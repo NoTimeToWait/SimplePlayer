@@ -1,0 +1,81 @@
+<!--  
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+ xmlns:android="http://schemas.android.com/apk/res/android"
+ xmlns:tools="http://schemas.android.com/tools"
+ android:id="@+id/LinearLayout1"
+ android:layout_width="match_parent"
+ android:layout_height="match_parent"
+ android:orientation="vertical">
+
+</LinearLayout>
+
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity" >
+    
+    <fragment
+    
+ 	android:id="@+id/tracklist_tabs"
+ 	android:name="ru.startandroid.develop.p1091listfragment.TracklistTabs"
+ 	android:layout_width="match_parent"
+ 	android:layout_height="match_parent">
+	</fragment>
+    
+
+</RelativeLayout>
+
+
+    <LinearLayout android:id="@+id/undobar"
+        android:layout_width="match_parent"
+    	android:layout_height="20dp"
+    	android:background="@drawable/bg_2" >
+
+        <TextView
+            android:id="@+id/undobar_message"
+            style="@style/UndoBarMessage"
+            android:layout_gravity="top" />
+
+        <Button android:id="@+id/undobar_button" style="@style/UndoBarButton" />
+    </LinearLayout>
+-->
+
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main_frame_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    
+    
+    <com.jeremyfeinstein.slidingmenu.lib.SlidingMenu
+    xmlns:sliding="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/slidingmenu"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    sliding:viewAbove="@layout/front_slide"
+    sliding:viewBehind="@layout/left_slide"
+    sliding:touchModeAbove="fullscreen"
+    sliding:behindOffset="48dp"
+    sliding:behindScrollScale="0.2"
+    sliding:fadeEnabled="false"
+    sliding:fadeDegree="0.9"
+    sliding:selectorEnabled="false"/>
+    
+    
+    <LinearLayout android:id="@+id/undobar" style="@style/UndoBar">
+        <TextView android:id="@+id/undobar_message" style="@style/UndoBarMessage" />
+        <Button android:id="@+id/undobar_button" style="@style/UndoBarButton" />
+    </LinearLayout>
+    
+  <!-- 
+    <fragment
+     	android:id="@+id/tracklist_tabs"
+ 	android:name="com.notime2wait.simpleplayer.TrackListTabs"
+ 	android:layout_width="match_parent"
+ 	android:layout_height="match_parent">
+	</fragment>
+	 -->     
+</FrameLayout>
