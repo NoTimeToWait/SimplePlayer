@@ -154,16 +154,22 @@ public class TrackListFrag extends ListFragment{
 		try{
 			mTracklistNext.setVisibility(mPlaylistHistory.hasNext()? View.VISIBLE : View.INVISIBLE);
 			//if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()) mTracklistNext.setVisibility(View.INVISIBLE);
-			if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()&&mMusicData.getHistoryIndex()==mMusicData.getHistorySize()-1) mTracklistNext.setVisibility(View.INVISIBLE);
+			if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()&&mMusicData.getHistoryIndex()==mMusicData.getHistorySize()-1)
+				mTracklistNext.setVisibility(View.INVISIBLE);
 			mTracklistPrev.setVisibility(mPlaylistHistory.hasPrevious()? View.VISIBLE : View.INVISIBLE);
+			if (mMusicData.getHistoryIndex()==mPlaylistHistory.previousIndex()&&mMusicData.getHistoryIndex()==0)
+				mTracklistPrev.setVisibility(View.INVISIBLE);
 			//if (mMusicData.getHistoryIndex()==mPlaylistHistory.previousIndex()) mTracklistPrev.setVisibility(View.INVISIBLE);
 		} catch (ConcurrentModificationException e) {
 			e.printStackTrace();
 			prepareHistoryIterator();
 			mTracklistNext.setVisibility(mPlaylistHistory.hasNext()? View.VISIBLE : View.INVISIBLE);
-			if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()) mTracklistNext.setVisibility(View.INVISIBLE);
+			//if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()) mTracklistNext.setVisibility(View.INVISIBLE);
+			if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()&&mMusicData.getHistoryIndex()==mMusicData.getHistorySize()-1)
+				mTracklistNext.setVisibility(View.INVISIBLE);
 			mTracklistPrev.setVisibility(mPlaylistHistory.hasPrevious()? View.VISIBLE : View.INVISIBLE);
-			if (mMusicData.getHistoryIndex()==mPlaylistHistory.previousIndex()) mTracklistPrev.setVisibility(View.INVISIBLE);
+			if (mMusicData.getHistoryIndex()==mPlaylistHistory.previousIndex()&&mMusicData.getHistoryIndex()==0)
+				mTracklistPrev.setVisibility(View.INVISIBLE);
 		}
 		return true;
 	}
@@ -350,6 +356,7 @@ public class TrackListFrag extends ListFragment{
 	  		super.onDestroyView();
 			  setListAdapter(null);
 			  initialized = false;
+			  MainActivity.handleUndoAction(null); //hide any popups produced by this fragment
 			  //mPlaylist = null;
 			  mHistoryButtonFlag = true;
 			  //mHomePlaylist = null;

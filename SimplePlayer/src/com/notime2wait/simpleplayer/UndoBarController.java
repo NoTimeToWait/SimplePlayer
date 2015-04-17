@@ -70,7 +70,6 @@ public class UndoBarController {
 			@Override
 			public void onFocusChange(View v, boolean hasFocus) {
 
-				Log.e("WWWWWWXX", ""+hasFocus);
 				if(!hasFocus) {
 					hideUndoBar(false);
 				}
@@ -82,8 +81,10 @@ public class UndoBarController {
     
     public boolean handleUndoToken(Undoable undoToken) {
     	mUndoToken = undoToken;
-    	if (undoToken==null)
+    	if (undoToken==null) {
+    		hideUndoBar(false);
     		return false;
+    	}
     	String message = undoToken.getUndoMessage();
     	if (message.isEmpty()) 
     		message = mBarView.getResources().getString(R.string.default_undo_message);
@@ -93,7 +94,6 @@ public class UndoBarController {
     
     private void showUndoBar(boolean immediate, String message) {
         mMessageView.setText(message);
-        Log.e("WWWWWW0", ""+(mBarView.getVisibility()==View.VISIBLE));
         mBarView.setVisibility(View.VISIBLE);
         if (immediate) {
             mBarView.setAlpha(1);
@@ -107,15 +107,12 @@ public class UndoBarController {
                     .setListener(null);
         }
 
-        Log.e("WWWWWW1", ""+(mBarView.getVisibility()==View.VISIBLE));
         mBarView.requestFocus();
 
-        Log.e("WWWWWW2", ""+(mBarView.getVisibility()==View.VISIBLE));
     }
 
     private void hideUndoBar(boolean immediate) {
 
-        Log.e("WWWWWW3", ""+(mBarView.getVisibility()==View.VISIBLE));
         if (immediate) {
             mBarView.setVisibility(View.GONE);
             mBarView.setAlpha(0);
@@ -136,7 +133,7 @@ public class UndoBarController {
                     });
         }
 
-        Log.e("WWWWWW4", ""+(mBarView.getVisibility()==View.VISIBLE));
+        if (MainActivity.DEBUG) Log.e("WWWWWW4", ""+(mBarView.getVisibility()==View.VISIBLE));
     }
 /*
     public void onSaveInstanceState(Bundle outState) {

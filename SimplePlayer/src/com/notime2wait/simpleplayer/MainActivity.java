@@ -3,6 +3,7 @@ package com.notime2wait.simpleplayer;
 import java.io.IOException;
 
 import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
+import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu.OnCloseListener;
 import com.notime2wait.simpleplayer.MusicData.Track;
 import com.notime2wait.simpleplayer.UndoBarController.Undoable;
 import com.notime2wait.simpleplayer.visualization.IVisuals;
@@ -106,6 +107,15 @@ public class MainActivity extends FragmentActivity
         slidingMenu.setMode(SlidingMenu.LEFT_RIGHT);
         slidingMenu.setSecondaryMenu(R.layout.right_slide);
         slidingMenu.showMenu(false);
+        slidingMenu.setOnCloseListener(new OnCloseListener() {
+
+			@Override
+			public void onClose() {
+				mUndoBarController.handleUndoToken(null); // hide any popups on slide
+				
+			}
+        	
+        });
         //StickyListAdapter mAdapter = new StickyListAdapter(this);
 
        // StickyListHeadersListView stickyList = (StickyListHeadersListView) findViewById(R.id.list);
@@ -158,6 +168,7 @@ public class MainActivity extends FragmentActivity
     }
     
     public static boolean handleUndoAction(Undoable undoToken) {
+    	//return mUndoBarController.handleUndoToken(undoToken);
     	return mUndoBarController.handleUndoToken(undoToken);
     }
     

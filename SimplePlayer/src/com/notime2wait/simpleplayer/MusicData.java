@@ -307,6 +307,7 @@ public class MusicData {
 		private final ArrayList<Track> playlist = new ArrayList<Track>();
 		private ArrayAdapter<Track> mAdapter;
 		private int mCurrentTrackIndex = 0;
+		private UndoBarController mUndoPopupController;
 		private int mLastRemovedIndex;
 		
 		public Playlist() {
@@ -441,7 +442,7 @@ public class MusicData {
 		/*public ArrayList<Track> getTracksList() {
 			return playlist;
 		}*/
-
+		
 		@Override
 		public ArrayAdapter<Track> getPlayListAdapter(Activity activity, int resource) {
 			// TODO Auto-generated method stub
