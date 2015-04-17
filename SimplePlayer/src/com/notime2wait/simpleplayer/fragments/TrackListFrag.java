@@ -153,9 +153,10 @@ public class TrackListFrag extends ListFragment{
 		
 		try{
 			mTracklistNext.setVisibility(mPlaylistHistory.hasNext()? View.VISIBLE : View.INVISIBLE);
-			if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()) mTracklistNext.setVisibility(View.INVISIBLE);
+			//if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()) mTracklistNext.setVisibility(View.INVISIBLE);
+			if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()&&mMusicData.getHistoryIndex()==mMusicData.getHistorySize()-1) mTracklistNext.setVisibility(View.INVISIBLE);
 			mTracklistPrev.setVisibility(mPlaylistHistory.hasPrevious()? View.VISIBLE : View.INVISIBLE);
-			if (mMusicData.getHistoryIndex()==mPlaylistHistory.previousIndex()) mTracklistPrev.setVisibility(View.INVISIBLE);
+			//if (mMusicData.getHistoryIndex()==mPlaylistHistory.previousIndex()) mTracklistPrev.setVisibility(View.INVISIBLE);
 		} catch (ConcurrentModificationException e) {
 			e.printStackTrace();
 			prepareHistoryIterator();
@@ -179,7 +180,7 @@ public class TrackListFrag extends ListFragment{
 	private boolean addHeaderView() {
 		
 		if (mHeaderView==null||mPlaylist==null) return false;
-		
+		prepareHeaderView();
 		this.getListView().addHeaderView(mHeaderView);
 		mPlaylistName.setText(mPlaylist.getName());
 		HEADER_LISTNUM_OFFSET++;
@@ -349,7 +350,7 @@ public class TrackListFrag extends ListFragment{
 	  		super.onDestroyView();
 			  setListAdapter(null);
 			  initialized = false;
-			  mPlaylist = null;
+			  //mPlaylist = null;
 			  mHistoryButtonFlag = true;
 			  //mHomePlaylist = null;
 		  }

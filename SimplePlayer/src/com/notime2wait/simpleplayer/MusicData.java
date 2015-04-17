@@ -80,6 +80,10 @@ public class MusicData {
 		mPlaylistHistory = new LinkedList<IPlaylist<Track>>();
 	}
 	
+	public int getHistorySize() {
+		return mPlaylistHistory.size();
+	}
+	
 	public void setHistoryIndex(int index) {
 		mHistoryIndex = index;
 	}
