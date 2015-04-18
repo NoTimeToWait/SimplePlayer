@@ -39,7 +39,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 
-public class DirectoryListFrag extends ListFragment{
+public class DirectoryListFrag extends BackHandledListFragment{
 	
 	private static String LOG_TAG = DirectoryListFrag.class.getName(); 
 	
@@ -246,5 +246,26 @@ public class DirectoryListFrag extends ListFragment{
 			  setListAdapter(null);
 			  isFolderView = true;
 		  }
+
+	@Override
+	public String getTagText() {
+		return "DirectoryTab";
+	}
+
+	@Override
+	public boolean onBackPressed() {
+//TODO: add back handling
+		if (!isFolderView && MainActivity.slidingMenu.isMenuShowing()) {
+			/* returns back to menu from the front slide - deprecated
+			 * if (!MainActivity.slidingMenu.isMenuShowing()) {
+				MainActivity.slidingMenu.showMenu();
+				return true;
+			} */
+			setListAdapter(folderlistAdapter);
+			isFolderView = true;
+			return true; //back event is consumed
+		}
+		return false;	//back event is not consumed
+	}
 }
 

@@ -6,6 +6,8 @@ import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
 import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu.OnCloseListener;
 import com.notime2wait.simpleplayer.MusicData.Track;
 import com.notime2wait.simpleplayer.UndoBarController.Undoable;
+import com.notime2wait.simpleplayer.fragments.IBackHandledFragment;
+import com.notime2wait.simpleplayer.fragments.IBackHandledFragment.BackHandlerInterface;
 import com.notime2wait.simpleplayer.visualization.IVisuals;
 import com.notime2wait.simpleplayer.visualization.WaveformUtils;
 
@@ -43,7 +45,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends FragmentActivity 
-		implements OnCompletionListener, SeekBar.OnSeekBarChangeListener{
+		implements OnCompletionListener, SeekBar.OnSeekBarChangeListener, BackHandlerInterface{
 	//implements AdapterView.OnItemClickListener, StickyListHeadersListView.OnHeaderClickListener {
 
     //private TestBaseAdapter mAdapter;
@@ -72,7 +74,8 @@ public class MainActivity extends FragmentActivity
     private BgView mBackground;
     // Handler to update UI timer, progress bar etc,.
     private Handler mHandler = new Handler();
-    
+    // fragment to propagate events, e.g. back button pressed
+    private IBackHandledFragment mFragment;
     //private int currentTrackIndex = 0;
     private boolean isShuffle = false;
     private boolean isRepeat = false;
@@ -139,7 +142,7 @@ public class MainActivity extends FragmentActivity
         //mBtnRepeat = (ImageButton) findViewById(R.id.btnRepeat);
         //mBtnShuffle = (ImageButton) findViewById(R.id.btnShuffle);
         mProgressBar = (SeekBar) findViewById(R.id.music_progressbar);
-        mProgressBar.setProgressDrawable(null);;;;
+        mProgressBar.setProgressDrawable(null);
         
         
         mVisuals = new WaveformUtils(getResources().getDisplayMetrics().widthPixels-(int)(16*density), (int) (45*density), this);
@@ -377,7 +380,29 @@ public class MainActivity extends FragmentActivity
     }
     
     
+    @Override
+    public void onBackPressed() {
 
+    	//TODO: check this statement logic
+        if ((mFragment == null || !mFragment.onBackPressed()) && !showFrontSlide()) {
+            // Selected fragment did not consume the back press event and front slide is currently visible then
+            super.onBackPressed();
+        }
+    }
+    
+    public boolean showFrontSlide() {
+    	if (slidingMenu.isMenuShowing()) {
+    		slidingMenu.showContent();
+    		return true;
+    	}
+    	return false;
+    }
+    
+    @Override
+	public void setSelectedFragment(IBackHandledFragment backHandledFragment) {
+		this.mFragment = backHandledFragment;
+		
+	}
 
     
     /*
@@ -433,4 +458,6 @@ public class MainActivity extends FragmentActivity
     	mMusicData.erasePlaylistHistory();
 		  stopMusic();
 	  }*/
+
+	
 }

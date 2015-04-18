@@ -28,13 +28,13 @@ public class TrackListTabs extends Fragment{
        //TODO should i set 
         mTabHost.setup(getActivity(), getChildFragmentManager(), R.id.realtabcontent);
 
-        mTabHost.addTab(mTabHost.newTabSpec("tracklist").setIndicator("Now Playing"),
+        mTabHost.addTab(mTabHost.newTabSpec("TracklistTab").setIndicator("Now Playing"),
                 TrackListFrag.class, null);
-        mTabHost.addTab(mTabHost.newTabSpec("folders").setIndicator("Folders"),
+        mTabHost.addTab(mTabHost.newTabSpec("DirectoryTab").setIndicator("Folders"),
                 DirectoryListFrag.class, null);
-        mTabHost.addTab(mTabHost.newTabSpec("allmusic").setIndicator("All Music"),
+        mTabHost.addTab(mTabHost.newTabSpec("AllMusicTab").setIndicator("All Music"),
                 AllMusicListFrag.class, null);
-        mTabHost.setCurrentTabByTag("folders");
+        mTabHost.setCurrentTabByTag("DirectoryTab");
         
         return mTabHost;
     }
