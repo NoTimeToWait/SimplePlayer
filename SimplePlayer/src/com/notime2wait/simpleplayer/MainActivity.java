@@ -211,8 +211,9 @@ public class MainActivity extends FragmentActivity
         // Play song
         try {
             mPlayer.reset();
-            mPlayer.setDataSource(track.getPath());
+            //TODO
             if (MainActivity.DEBUG) Log.e(LOG_TAG, track.getPath());
+            mPlayer.setDataSource(track.getPath());
             mPlayer.prepare();
             mPlayer.start();
             // Displaying Song title
@@ -312,19 +313,19 @@ public class MainActivity extends FragmentActivity
 	}
 	
 	private Track getCurrentTrack() {
-    	return mMusicData.new Track("", "");
+    	return mMusicData.new Track("", "", "", "");
     }
 	
     private Track getNextTrack() {
-    	return mMusicData.new Track("", "");
+    	return mMusicData.new Track("", "", "", "");
     }
     
     private Track getPrevTrack() {
-    	return mMusicData.new Track("", "");
+    	return mMusicData.new Track("", "", "", "");
     }
     
     private Track getRandomTrack() {
-    	return mMusicData.new Track("", "");
+    	return mMusicData.new Track("", "", "", "");
     }
     
     private ImageButton getButtonNext(){

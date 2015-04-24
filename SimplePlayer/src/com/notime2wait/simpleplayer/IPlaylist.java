@@ -17,12 +17,14 @@ import com.notime2wait.simpleplayer.MusicData.Track;
 
 public interface IPlaylist<T>  {
 		
-	public String getName();
+	public String getTitle();
 	
-	public void setName(String playlistName);
+	public void setTitle(String playlistName);
 	
 	//IMPORTANT:This getters should be used only in playback calls
 	public T getTrack(int index);
+	
+	public int getPlaylistSize();
 	
 	public T getNext();
 	

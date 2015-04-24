@@ -16,6 +16,7 @@ import com.mobeta.android.dslv.DragSortListView;
 import com.notime2wait.simpleplayer.IPlaylist;
 import com.notime2wait.simpleplayer.MainActivity;
 import com.notime2wait.simpleplayer.MusicData;
+import com.notime2wait.simpleplayer.PlaylistDbHelper;
 import com.notime2wait.simpleplayer.R;
 import com.notime2wait.simpleplayer.MusicData.Track;
 import com.notime2wait.simpleplayer.R.id;
@@ -27,6 +28,7 @@ import android.R.color;
 import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -34,9 +36,13 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.app.ListFragment;
 import android.support.v4.content.CursorLoader;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.*;
 import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -100,6 +106,26 @@ public class TrackListFrag extends ListFragment{
 	private boolean prepareHeaderView() {
 		
 		mPlaylistName = (EditText)mHeaderView.findViewById(R.id.tracklist_title);
+		//InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+		//imm.showSoftInput(mPlaylistName, InputMethodManager.SHOW_IMPLICIT);
+		/*mPlaylistName.setOnFocusChangeListener( new OnFocusChangeListener() {
+
+			@Override
+			public void onFocusChange(View v, boolean hasFocus) {
+				if (!hasFocus) {
+					InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+					imm.hideSoftInputFromWindow(mPlaylistName.getWindowToken(), 0);	
+				}
+			}
+		});*/
+		
+		mPlaylistName.addTextChangedListener(new TextWatcher(){
+	        public void afterTextChanged(Editable s) {
+	            mPlaylist.setTitle(s.toString());
+	        }
+	        public void beforeTextChanged(CharSequence s, int start, int count, int after){}
+	        public void onTextChanged(CharSequence s, int start, int before, int count){}
+	    }); 
 		this.mTracklistPrev = (ImageButton) mHeaderView.findViewById(R.id.btn_tracklist_prev);
 		this.mTracklistNext = (ImageButton) mHeaderView.findViewById(R.id.btn_tracklist_next);
 		this.mTracklistSave = (ImageButton) mHeaderView.findViewById(R.id.btn_tracklist_save);
@@ -122,7 +148,7 @@ public class TrackListFrag extends ListFragment{
 				 	if (!mPlaylistHistory.hasPrevious()) mTracklistPrev.setVisibility(View.INVISIBLE);
 				 	
 
-					mPlaylistName.setText(mPlaylist.getName());
+					mPlaylistName.setText(mPlaylist.getTitle());
 					mAdapter = getTrackListAdapter();
 				    setListAdapter(mAdapter);
 				    //mPlaylistName.setText(mAdapter.getCount());
@@ -144,13 +170,22 @@ public class TrackListFrag extends ListFragment{
 				 		mTracklistPrev.setVisibility(View.VISIBLE);
 				 	if (!mPlaylistHistory.hasNext()) mTracklistNext.setVisibility(View.INVISIBLE);
 				 	
-					mPlaylistName.setText(mPlaylist.getName());
+					mPlaylistName.setText(mPlaylist.getTitle());
 					mAdapter = getTrackListAdapter();
 				    setListAdapter(mAdapter);
 				    mPlaylistName.setText("Count"/*+mAdapter.getCount()*/);
 			     }
 		});
 		
+		mTracklistSave.setOnClickListener( new OnClickListener(){
+			 public void onClick(View v) {
+				 
+				 PlaylistDbHelper dbHelper = mMusicData.getPlaylistDbHelper();
+				 SQLiteDatabase db = dbHelper.getWritableDatabase();
+				 dbHelper.savePlaylist(dbHelper.getWritableDatabase(), mPlaylist);
+			 }
+		});
+				
 		try{
 			mTracklistNext.setVisibility(mPlaylistHistory.hasNext()? View.VISIBLE : View.INVISIBLE);
 			//if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()) mTracklistNext.setVisibility(View.INVISIBLE);
@@ -188,7 +223,7 @@ public class TrackListFrag extends ListFragment{
 		if (mHeaderView==null||mPlaylist==null) return false;
 		prepareHeaderView();
 		this.getListView().addHeaderView(mHeaderView);
-		mPlaylistName.setText(mPlaylist.getName());
+		mPlaylistName.setText(mPlaylist.getTitle());
 		HEADER_LISTNUM_OFFSET++;
 		initialized = true;
 		return true;

@@ -240,13 +240,6 @@ public class DirectoryListFrag extends BackHandledListFragment{
 		
 		
 
-	  	@Override
-		  public void onDestroyView() {
-	  		super.onDestroyView();
-			  setListAdapter(null);
-			  isFolderView = true;
-		  }
-
 	@Override
 	public String getTagText() {
 		return "DirectoryTab";
@@ -267,5 +260,14 @@ public class DirectoryListFrag extends BackHandledListFragment{
 		}
 		return false;	//back event is not consumed
 	}
+	
+
+
+  	@Override
+	  public void onDestroyView() {
+  		super.onDestroyView();
+		  setListAdapter(null);
+		  isFolderView = true;
+	  }
 }
 

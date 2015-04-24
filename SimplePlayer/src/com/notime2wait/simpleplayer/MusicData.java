@@ -12,6 +12,8 @@ import com.notime2wait.simpleplayer.visualization.WaveformUtils;
 import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Environment;
@@ -38,6 +40,11 @@ public class MusicData {
 	private String[] mFolders; 
 	
 	/*
+	 * array to contain playlists 
+	 */
+	private ArrayList<IPlaylist> mPlaylists;
+	
+	/*
 	 *  array with all music tracks listed
 	 */
 	private Track[] mTracks;
@@ -50,6 +57,9 @@ public class MusicData {
 	private final ArrayList<Integer> mFolderOffset = new ArrayList<Integer>();
 	
 	private Playlist mCurrentPlaylist = new Playlist();
+	
+	private PlaylistDbHelper mPlaylistDbHelper;
+	
 	private int HISTORY_LEN = 20;
 	private LinkedList<IPlaylist<Track>> mPlaylistHistory = new LinkedList<IPlaylist<Track>>();
 	private int mHistoryIndex = -1;
@@ -59,6 +69,7 @@ public class MusicData {
 	public void init(MainActivity activity) {
 		mMainActivity = activity;
 		getMusicList(false);
+		mPlaylistDbHelper = new PlaylistDbHelper(mMainActivity);
 	}
 	
 	public Playlist getCurrentPlaylist() {
@@ -177,6 +188,7 @@ public class MusicData {
 		
 
 		ArrayList<String> folderlist = new ArrayList<String>();
+		//TODO: make it async  
 		if (cursor.moveToFirst()) {
 				mTracks = new Track[cursor.getCount()];
 				int i=0;
@@ -209,8 +221,20 @@ public class MusicData {
 			getMusicList(true);
 			return;
 		}
+		cursor.close();
 		mFolders = new String[folderlist.size()];
 		mFolders = folderlist.toArray(mFolders);
+	}
+	
+	public PlaylistDbHelper getPlaylistDbHelper() {
+		/*try {
+			return mPlaylistDbHelper.getReadableDatabase();
+		}
+		catch (SQLiteException e) {
+			Log.e(LOG_TAG, "Unable to open playlist database");
+			return null;
+		}*/
+		return  mPlaylistDbHelper;
 	}
 	
 	public boolean isPlaying() {
@@ -270,12 +294,35 @@ public class MusicData {
 		return mMainActivity.playTrack(mTracks[track_offset+trackPosition]);
 	}
 	
+	public boolean playTracks(String playlist, int trackPosition, final Track[] tracks ) {
+		//mCurrentTrackIndex = trackPos;
+		mCurrentPlaylist = new Playlist();
+		//TODO check if there tracks array is consistent
+		mCurrentPlaylist.add(tracks);
+		mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
+		mPlaylistHistory.addLast(mCurrentPlaylist);
+		mHistoryIndex = mPlaylistHistory.size()-1;
+		return mMainActivity.playTrack(tracks[trackPosition]);
+	}
+	
 	public void addTrackToPlaylist(int trackNum) {
 		mCurrentPlaylist.add(mTracks[trackNum]);
 	}
 	
+	public void addTrackToPlaylist(Track track) {
+		mCurrentPlaylist.add(track);
+	}
+	
 	public void addTracksToPlaylist(String folderName, int totalTrackNum) {
 		addTracksToPlaylist(folderName, totalTrackNum, mCurrentPlaylist);
+	}
+	
+	public void addTracksToPlaylist(Track[] tracks) {
+		if (!mCurrentPlaylist.add(tracks)) {
+			mCurrentPlaylist = new Playlist();
+			mCurrentPlaylist.add(tracks);
+			mPlaylistHistory.addLast(mCurrentPlaylist);
+		}
 	}
 	
 	public void addTracksToPlaylist(String folderName, int totalTrackNum, Playlist playlist) {
@@ -303,7 +350,7 @@ public class MusicData {
 	private class Playlist implements IPlaylist<Track> {
 		
 		//contains track paths
-		private String name;
+		private String title;
 		private final ArrayList<Track> playlist = new ArrayList<Track>();
 		private ArrayAdapter<Track> mAdapter;
 		private int mCurrentTrackIndex = 0;
@@ -311,19 +358,19 @@ public class MusicData {
 		private int mLastRemovedIndex;
 		
 		public Playlist() {
-			name = "UntitledPlaylist";
+			title = "UntitledPlaylist";
 		}
 		
 		public Playlist(String playlistName) {
-			name = playlistName;
+			title = playlistName;
+		}
+				
+		public String getTitle() {
+			return title;
 		}
 		
-		public String getName() {
-			return name;
-		}
-		
-		public void setName(String playlistName) {
-			name = playlistName;
+		public void setTitle(String playlistName) {
+			title = playlistName;
 		}
 		
 		public Track remove(int position) {
@@ -402,6 +449,11 @@ public class MusicData {
 			return playlist.get(index);
 		}
 		
+		@Override
+		public int getPlaylistSize() {
+			return playlist.size();
+		}
+		
 		public Track getNext() {
 			return playlist.get(mCurrentTrackIndex++);
 		}
@@ -445,7 +497,6 @@ public class MusicData {
 		
 		@Override
 		public ArrayAdapter<Track> getPlayListAdapter(Activity activity, int resource) {
-			// TODO Auto-generated method stub
 			if (mAdapter==null) 
 				mAdapter = new ArrayAdapter<Track>(activity, resource, playlist) {
 		    			  @Override
@@ -467,8 +518,6 @@ public class MusicData {
 			return mAdapter;
 		}
 
-		
-
 	}
 
 	
@@ -478,11 +527,11 @@ public class MusicData {
 		private String path;
 		private String album;
 		private String artist;
-		
+		/*
 		public Track(String title, String path) {
 			this.title = title;
 			this.path = path;
-		}
+		}*/
 		
 		public Track(String title, String path, String album, String artist) {
 			this.title = title;
@@ -499,10 +548,20 @@ public class MusicData {
 			return title;
 		}
 		
+		public String getAlbum() {
+			return album;
+		}
+		
+		public String getArtist() {
+			return artist;
+		}
+		
 		public Track clone() {
-			return new Track(title, path);
+			return new Track(title, path, album, artist);
 			
 		}
 	}
+	
+	
 }
 	
