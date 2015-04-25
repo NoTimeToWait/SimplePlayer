@@ -50,7 +50,7 @@ Log.v("Length", "Length"+folders.length);
 	if (convertView == null) {
     	holder = new ViewHolder();
     	convertView = inflater.inflate(R.layout.tracklist_item, parent, false);
-    	holder.trackName = (TextView)convertView.findViewById(R.id.trackName);
+    	holder.trackName = (TextView)convertView.findViewById(R.id.title);
    		convertView.setTag(holder);
 	} else {
 		holder = (ViewHolder) convertView.getTag();
