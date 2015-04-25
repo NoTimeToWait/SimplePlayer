@@ -66,7 +66,7 @@ Log.v("Length", "Length"+folders.length);
 	if (convertView == null) {
     	holder = new HeaderViewHolder();
     	convertView = inflater.inflate(R.layout.folderlist_item, parent, false);
-    	holder.folderName = (TextView)convertView.findViewById(R.id.folderName);
+    	holder.folderName = (TextView)convertView.findViewById(R.id.title);
 		holder.folderPath = (TextView)convertView.findViewById(R.id.folderPath);
 		convertView.setTag(holder);
 	} else {

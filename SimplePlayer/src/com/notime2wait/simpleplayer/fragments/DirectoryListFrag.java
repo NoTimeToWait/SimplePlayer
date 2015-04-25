@@ -96,8 +96,8 @@ public class DirectoryListFrag extends BackHandledListFragment{
                             public void onDismiss(ListView listView, int[] reverseSortedPositions) {
                             	if (isFolderView)
                             		for (int position : reverseSortedPositions) {
-                            			
-                            			mMusicData.addTracksToPlaylist(folders[position-HEADER_LISTNUM_OFFSET], currentFolderTracks.length);
+                            			String folder_path = folders[position-HEADER_LISTNUM_OFFSET];
+                            			mMusicData.addTracksToPlaylist(folder_path, mMusicData.getTracks(folder_path).length);
                             		}
                             	else 
                             		for (int position : reverseSortedPositions) {
@@ -152,7 +152,7 @@ public class DirectoryListFrag extends BackHandledListFragment{
 			    int slash_position = folder_item.lastIndexOf('/');
 			    String name = folder_item.substring(slash_position);
 			    		
-			    TextView folderName = (TextView)folder_view.findViewById(R.id.folderName);
+			    TextView folderName = (TextView)folder_view.findViewById(R.id.title);
 	    		TextView folderPath = (TextView)folder_view.findViewById(R.id.folderPath);
 	    		folderName.setText(name);
 	    		folderPath.setText(folder_item);
@@ -170,7 +170,7 @@ public class DirectoryListFrag extends BackHandledListFragment{
 		  
 		  currentFolderTracks = mMusicData.getTracks(folder_path);
 		  return new ArrayAdapter<Track>(getActivity(),
-			        R.layout.folderlist_item, currentFolderTracks) {
+			        R.layout.tracklist_item, currentFolderTracks) {
 		    	
 
 			  @Override
@@ -182,7 +182,7 @@ public class DirectoryListFrag extends BackHandledListFragment{
 			       track_view = inflater.inflate(R.layout.tracklist_item, parent, false);
 			    }
 			    		
-			    TextView trackName = (TextView)track_view.findViewById(R.id.trackName);
+			    TextView trackName = (TextView)track_view.findViewById(R.id.title);
 	    		trackName.setText(currentFolderTracks[position].getTitle());
 
 			    return track_view;

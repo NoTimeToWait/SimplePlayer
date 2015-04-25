@@ -547,7 +547,7 @@ public class WaveformUtils implements IVisuals {
         Canvas cachedCanvas = new Canvas(cachedBitmap);
         //draw 9patched background
         Rect npdBounds = new Rect(0, 0, width, height);
-        Log.e("WWWWW", "this.getWidth()"+width+"this.getHeight()"+height);
+        //Log.e("WWWWW", "this.getWidth()"+width+"this.getHeight()"+height);
         waveformBkgd.setBounds(npdBounds);
         waveformBkgd.draw(cachedCanvas);
             //apply mask
