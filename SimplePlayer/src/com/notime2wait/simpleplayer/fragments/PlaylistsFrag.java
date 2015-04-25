@@ -128,7 +128,6 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 		  //TODO:
 		  else {
 			  
-			  openedPlaylistTracks = getTracks(playlistAdapter.getCursor());
 			  
 
 				//if (MainActivity.DEBUG) Log.e(LOG_TAG, "ssssss"+position);
@@ -297,6 +296,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 		if (loader.getId() == this.getId())	{
 			playlistAdapter.swapCursor(newCursor);
 			setListAdapter(playlistAdapter);
+			if (!isPlaylistView) openedPlaylistTracks = getTracks(newCursor);
 			//this.getListView().setAdapter(playlistAdapter);
 		}
 	}
