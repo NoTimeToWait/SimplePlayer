@@ -131,7 +131,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 			  openedPlaylistTracks = getTracks(playlistAdapter.getCursor());
 			  
 
-				if (MainActivity.DEBUG) Log.e(LOG_TAG, "ssssss"+position);
+				//if (MainActivity.DEBUG) Log.e(LOG_TAG, "ssssss"+position);
 			  mMusicData.playTracks(openedPlaylist, position, openedPlaylistTracks);
 			  //TODO
 			  MainActivity.slidingMenu.showContent(true);
@@ -263,7 +263,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 		public Cursor loadInBackground() {
 			PlaylistDbHelper dbHelper = MainActivity.getMusicData().getPlaylistDbHelper();
 			SQLiteDatabase db = dbHelper.getReadableDatabase();
-			if (MainActivity.DEBUG) Log.e("SSSSSSSSS", ""+fragment.openedPlaylist());
+			//if (MainActivity.DEBUG) Log.e("SSSSSSSSS", ""+fragment.openedPlaylist());
 		         Cursor cursor = (fragment.openedPlaylist() == null)? dbHelper.getPlaylists(db) : dbHelper.getTracklist(db, fragment.openedPlaylist());
 		         //if (cursor != null) {
 		         //    cursor.getCount();

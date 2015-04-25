@@ -94,13 +94,14 @@ public class MusicData {
 	public int getHistorySize() {
 		return mPlaylistHistory.size();
 	}
-	
+		
 	public void setHistoryIndex(int index) {
 		mHistoryIndex = index;
 	}
 	
 	public boolean isHomePlaylist(){
 		if (mPlaylistHistory.isEmpty()) return true;
+		if (MainActivity.DEBUG) Log.e("1111111", "mHistoryIndex="+mHistoryIndex+" CurrentPlaylist="+mCurrentPlaylist.title);
 		return mCurrentPlaylist.equals(mPlaylistHistory.get(mHistoryIndex<0? 0:mHistoryIndex));
 	}
 	
@@ -268,8 +269,9 @@ public class MusicData {
 	 * @param track
 	 * @return
 	 */
-	public boolean playTrack(int trackPosition, Track track) {
-
+	public boolean playTrack(int trackPosition, IPlaylist playlist) {
+		Track track = (Track) playlist.getTrack(trackPosition);
+		mCurrentPlaylist = (Playlist) playlist;
 		mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
 		return mMainActivity.playTrack(track);
 	}
@@ -300,6 +302,7 @@ public class MusicData {
 		//TODO check if there tracks array is consistent
 		mCurrentPlaylist.add(tracks);
 		mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
+		mCurrentPlaylist.setTitle(playlist);
 		mPlaylistHistory.addLast(mCurrentPlaylist);
 		mHistoryIndex = mPlaylistHistory.size()-1;
 		return mMainActivity.playTrack(tracks[trackPosition]);

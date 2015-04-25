@@ -60,13 +60,14 @@ public class TrackListFrag extends ListFragment{
 	//private ArrayList<Track> tracks;
 	private ListIterator<IPlaylist<Track>> mPlaylistHistory;
 	private IPlaylist<Track> mPlaylist; //initialization in getTrackListAdapter() method for optimization purposes
-	private int mHomePlaylist; //this is required since the visible playlist could be other than the playing one 
+	//private int mHomePlaylist; //this is required since the visible playlist could be other than the playing one 
 								//while browsing Playlist History we have to check if our current visible list is the same
 	//private IPlaylist<Track> mHomePlaylist;
 	private MusicData mMusicData;
-	private DragSortController mController;
+	//private DragSortController mController;
 	private boolean mHistoryButtonFlag = true; //required to reduce unnecessary moves by iterator when switching direction
 	
+	//header variables
 	private View mHeaderView;
 	private EditText mPlaylistName;
 	private ImageButton mTracklistNext;
@@ -87,16 +88,15 @@ public class TrackListFrag extends ListFragment{
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		HEADER_LISTNUM_OFFSET = 0;
 
-		//mPlaylistHistory = mMusicData.getPlaylistHistory();
-		prepareHistoryIterator();
+		mPlaylistHistory = mMusicData.getPlaylistHistory();
 		if (mHeaderView==null) mHeaderView = inflater.inflate(R.layout.tracklist_header, null);
 		prepareHeaderView();
 		
 		DragSortListView listView = (DragSortListView) inflater.inflate(R.layout.dragndrop_frag, container, false);
 
-		mController = getController(listView);
-		listView.setFloatViewManager(mController);
-		listView.setOnTouchListener(mController);
+		//mController = getController(listView);
+		listView.setFloatViewManager(getController(listView));
+		listView.setOnTouchListener(getController(listView));
 		listView.setDragEnabled(true);
 		listView.setDropListener(getDropListener());
 		listView.setRemoveListener(getRemoveListener());
@@ -173,7 +173,6 @@ public class TrackListFrag extends ListFragment{
 					mPlaylistName.setText(mPlaylist.getTitle());
 					mAdapter = getTrackListAdapter();
 				    setListAdapter(mAdapter);
-				    mPlaylistName.setText("Count"/*+mAdapter.getCount()*/);
 			     }
 		});
 		
@@ -197,7 +196,7 @@ public class TrackListFrag extends ListFragment{
 			//if (mMusicData.getHistoryIndex()==mPlaylistHistory.previousIndex()) mTracklistPrev.setVisibility(View.INVISIBLE);
 		} catch (ConcurrentModificationException e) {
 			e.printStackTrace();
-			prepareHistoryIterator();
+			mPlaylistHistory = mMusicData.getPlaylistHistory();
 			mTracklistNext.setVisibility(mPlaylistHistory.hasNext()? View.VISIBLE : View.INVISIBLE);
 			//if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()) mTracklistNext.setVisibility(View.INVISIBLE);
 			if (mMusicData.getHistoryIndex()==mPlaylistHistory.nextIndex()&&mMusicData.getHistoryIndex()==mMusicData.getHistorySize()-1)
@@ -209,14 +208,16 @@ public class TrackListFrag extends ListFragment{
 		return true;
 	}
 	
-
+/*
 	private void prepareHistoryIterator() {
-		
-		mPlaylistHistory = mMusicData.getPlaylistHistory();
-		mHomePlaylist = mMusicData.getHistoryIndex();
+		//if (mHomePlaylist !=  mMusicData.getHistoryIndex()) 
+		//{
+		//	mPlaylist = mMusicData.getCurrentPlaylist();
+		//}
+		//mHomePlaylist = mMusicData.getHistoryIndex();
 		//if (mHomePlaylist==null)
 		//	mHomePlaylist = mMusicData.getCurrentPlaylist();
-	}
+	}*/
 	
 	private boolean addHeaderView() {
 		
@@ -228,10 +229,10 @@ public class TrackListFrag extends ListFragment{
 		initialized = true;
 		return true;
 }	
-	
+	/*
 	private boolean isHomePlaylist() {
 		return mMusicData.getHistoryIndex()==this.mHomePlaylist;
-	}
+	}*/
 	
 			
 	  @Override
@@ -240,9 +241,10 @@ public class TrackListFrag extends ListFragment{
 		//DragSortListView listView = (DragSortListView) getListView(); 
 		//listView.setDropListener(getDropListener());
 		//listView.setRemoveListener(getRemoveListener());
+
+		if (MainActivity.DEBUG) Log.e("QQQQQQQ", "SSSSSS");
 	    mAdapter = getTrackListAdapter();
 	    setListAdapter(mAdapter);
-	    
 	    /*
 		SwipeDismissListViewTouchListener touchListener =
                 new SwipeDismissListViewTouchListener(
@@ -288,8 +290,8 @@ public class TrackListFrag extends ListFragment{
 	  @Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		  //v.setBackgroundColor(color.background_light);
-			  mMusicData.playTrack(position-HEADER_LISTNUM_OFFSET, mPlaylist.getTrack(position-HEADER_LISTNUM_OFFSET));
-			  mHomePlaylist = mMusicData.getHistoryIndex(); 
+			  mMusicData.playTrack(position-HEADER_LISTNUM_OFFSET, mPlaylist);
+			  //mHomePlaylist = mMusicData.getHistoryIndex(); 
 			  MainActivity.slidingMenu.showContent(true);
 		  
 	}
@@ -297,7 +299,9 @@ public class TrackListFrag extends ListFragment{
 	private ArrayAdapter<Track> getTrackListAdapter() {
 		//TODO: possible source of errors. Have to replace this with a current playlist from the list iterator
 		if (mPlaylist == null) 
+		{
 			mPlaylist = mMusicData.getCurrentPlaylist();
+		}
 		if (!initialized)
 			addHeaderView();
 		return mPlaylist.getPlayListAdapter(getActivity(), R.layout.folderlist_item);
@@ -362,13 +366,13 @@ public class TrackListFrag extends ListFragment{
 		    	if (MainActivity.DEBUG) Log.e(LOG_TAG, "remove pos:"+position+"current pos:"+currentPlayingTrack);
 		    	mPlaylist.remove(position); //changes current track index in its method declaration
 		    	//mAdapter.notifyDataSetChanged();
-		    	if (!isHomePlaylist()) return;
+		    	if (!mMusicData.isHomePlaylist()) return;
 		    	if (mPlaylist.getCurrentTrackIndex()==-1) {
 		    		mMusicData.stopMusic();
 		    		return;
 		    	}
 		    	if (position==currentPlayingTrack&&mMusicData.isPlaying())
-		    		mMusicData.playTrack(mPlaylist.getCurrentTrackIndex(), mPlaylist.getCurrentTrack());
+		    		mMusicData.playTrack(mPlaylist.getCurrentTrackIndex(), mPlaylist);
 		    	if (MainActivity.DEBUG) Log.e(LOG_TAG, "remove pos:"+position+"current pos:"+currentPlayingTrack);
                 /*int temp_position = position-HEADER_LISTNUM_OFFSET;      			
                 mAdapter.remove(mAdapter.getItem(position-HEADER_LISTNUM_OFFSET));
@@ -392,7 +396,7 @@ public class TrackListFrag extends ListFragment{
 			  setListAdapter(null);
 			  initialized = false;
 			  MainActivity.handleUndoAction(null); //hide any popups produced by this fragment
-			  //mPlaylist = null;
+			  mPlaylist = null;
 			  mHistoryButtonFlag = true;
 			  //mHomePlaylist = null;
 		  }
