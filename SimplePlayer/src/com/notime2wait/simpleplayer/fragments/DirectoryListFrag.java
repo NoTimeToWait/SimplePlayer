@@ -1,40 +1,16 @@
 package com.notime2wait.simpleplayer.fragments;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
 import com.notime2wait.simpleplayer.MainActivity;
 import com.notime2wait.simpleplayer.MusicData;
 import com.notime2wait.simpleplayer.R;
 import com.notime2wait.simpleplayer.SwipeDismissListViewTouchListener;
 import com.notime2wait.simpleplayer.MusicData.Track;
-import com.notime2wait.simpleplayer.R.id;
-import com.notime2wait.simpleplayer.R.layout;
-import com.notime2wait.simpleplayer.SwipeDismissListViewTouchListener.OnDismissCallback;
-
-import se.emilsjolander.stickylistheaders.StickyListHeadersListView;
-
-import android.R.color;
-import android.app.Activity;
-import android.content.Context;
-import android.database.Cursor;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.support.v4.app.ListFragment;
-import android.support.v4.content.CursorLoader;
 import android.util.Log;
 import android.view.*;
 import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -91,7 +67,7 @@ public class DirectoryListFrag extends BackHandledListFragment{
 		SwipeDismissListViewTouchListener touchListener =
                 new SwipeDismissListViewTouchListener(
                         listView,
-                        new SwipeDismissListViewTouchListener.OnDismissCallback() {
+                        new SwipeDismissListViewTouchListener.DismissCallbacks() {
                             @Override
                             public void onDismiss(ListView listView, int[] reverseSortedPositions) {
                             	if (isFolderView)
@@ -105,6 +81,12 @@ public class DirectoryListFrag extends BackHandledListFragment{
                                 		}
                                 //mAdapter.notifyDataSetChanged();
                             }
+
+							@Override
+							public boolean canDismiss(int position) {
+								//TODO: add here @fling_dismiss option from User Preferences
+								return true;
+							}
                         });
         listView.setOnTouchListener(touchListener);
         // Setting this scroll listener is required to ensure that during ListView scrolling,

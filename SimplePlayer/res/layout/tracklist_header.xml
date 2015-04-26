@@ -8,7 +8,7 @@
         android:id="@+id/btn_tracklist_prev"
 		android:layout_marginLeft="4dp"
         android:layout_width="wrap_content"
-        android:layout_height="16dp"
+        android:layout_height="32dp"
         android:layout_gravity="center_vertical"
         android:text="Prev" >
         
@@ -24,13 +24,12 @@
         android:maxEms="64"
         android:singleLine="true" >
 
-        <requestFocus />
     </EditText>
     
 	<ImageButton
 	    android:id="@+id/btn_tracklist_next"
 	    android:layout_width="wrap_content"
-	    android:layout_height="16dp"
+	    android:layout_height="32dp"
 	    android:layout_gravity="center_vertical"
 	    android:text="Next" >
         

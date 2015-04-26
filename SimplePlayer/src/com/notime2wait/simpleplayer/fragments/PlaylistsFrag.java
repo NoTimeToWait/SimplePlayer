@@ -1,50 +1,21 @@
 package com.notime2wait.simpleplayer.fragments;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
 import com.notime2wait.simpleplayer.MainActivity;
 import com.notime2wait.simpleplayer.MusicData;
 import com.notime2wait.simpleplayer.PlaylistDbHelper;
 import com.notime2wait.simpleplayer.R;
 import com.notime2wait.simpleplayer.SwipeDismissListViewTouchListener;
 import com.notime2wait.simpleplayer.MusicData.Track;
-import com.notime2wait.simpleplayer.PlaylistDbHelper.TracklistEntry;
-import com.notime2wait.simpleplayer.R.id;
-import com.notime2wait.simpleplayer.R.layout;
-import com.notime2wait.simpleplayer.SwipeDismissListViewTouchListener.OnDismissCallback;
-
-import se.emilsjolander.stickylistheaders.StickyListHeadersListView;
-
-import android.R.color;
-import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Parcelable;
-import android.provider.MediaStore;
-import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.CursorAdapter;
-import android.support.v4.widget.SimpleCursorAdapter;
-import android.util.Log;
-import android.util.Pair;
 import android.view.*;
-import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -56,7 +27,6 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 	private int HEADER_LISTNUM_OFFSET = 0;
 	private CursorAdapter playlistAdapter;
 	private MusicData mMusicData;
-	private String[] playlists;
 	private Track[] openedPlaylistTracks;
 	private String openedPlaylist;
 	private boolean isPlaylistView = true;
@@ -89,7 +59,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 		SwipeDismissListViewTouchListener touchListener =
                 new SwipeDismissListViewTouchListener(
                         listView,
-                        new SwipeDismissListViewTouchListener.OnDismissCallback() {
+                        new SwipeDismissListViewTouchListener.DismissCallbacks() {
                             @Override
                             public void onDismiss(ListView listView, int[] reverseSortedPositions) {
                             	if (isPlaylistView) {
@@ -107,9 +77,12 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
                             		for (int position : reverseSortedPositions) {
                                         mMusicData.addTrackToPlaylist(openedPlaylistTracks[position]);
                                 		}
-                                //mAdapter.notifyDataSetChanged();
-                            	
                             }
+                            
+                            public boolean canDismiss(int position) {
+								//TODO: add here @fling_dismiss option from User Preferences
+								return true;
+							}
                         });
         listView.setOnTouchListener(touchListener);
         // Setting this scroll listener is required to ensure that during ListView scrolling,
