@@ -119,11 +119,12 @@ public class DirectoryListFrag extends BackHandledListFragment{
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		  //v.setBackgroundColor(color.background_light);
 		  if (isFolderView) {
-			  	  currentFolder = folders[position-HEADER_LISTNUM_OFFSET];
-			  	  if (MainActivity.DEBUG) Log.d(LOG_TAG, "Position "+folders[position-HEADER_LISTNUM_OFFSET]);
-				  tracklistAdapter = getTrackListAdapter(currentFolder);
-				  setListAdapter(tracklistAdapter);
-				  isFolderView = false;
+			  saveScrollState();
+			  currentFolder = folders[position-HEADER_LISTNUM_OFFSET];
+			  if (MainActivity.DEBUG) Log.d(LOG_TAG, "Position "+folders[position-HEADER_LISTNUM_OFFSET]);
+			  tracklistAdapter = getTrackListAdapter(currentFolder);
+			  setListAdapter(tracklistAdapter);
+			  isFolderView = false;
 		  }
 		  else {
 			  mMusicData.playTrack(currentFolder, position, currentFolderTracks.length);
@@ -256,6 +257,7 @@ public class DirectoryListFrag extends BackHandledListFragment{
 			} */
 			setListAdapter(folderlistAdapter);
 			isFolderView = true;
+			restoreScrollState();
 			return true; //back event is consumed
 		}
 		return false;	//back event is not consumed

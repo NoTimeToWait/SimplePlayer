@@ -31,6 +31,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager;
@@ -40,6 +41,7 @@ import android.support.v4.content.Loader;
 import android.support.v4.widget.CursorAdapter;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.util.Log;
+import android.util.Pair;
 import android.view.*;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
@@ -121,6 +123,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 	  @Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		  if (isPlaylistView) {
+			  saveScrollState();
 			  isPlaylistView = false;
 			  openedPlaylist = ((TextView)v.findViewById(R.id.title)).getText().toString();
 			  getLoaderManager().getLoader(this.getId()).forceLoad();
@@ -298,6 +301,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 			setListAdapter(playlistAdapter);
 			if (!isPlaylistView) openedPlaylistTracks = getTracks(newCursor);
 			//this.getListView().setAdapter(playlistAdapter);
+			else restoreScrollState();
 		}
 	}
 
@@ -305,5 +309,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 	public void onLoaderReset(Loader<Cursor> loader) {
 		playlistAdapter.swapCursor(null);
 	}
+	
+	
 }
 

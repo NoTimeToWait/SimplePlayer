@@ -7,12 +7,14 @@
         android:id="@+id/folderPath"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/mainlist"
-        android:layout_alignTop="@+id/mainlist"
     android:paddingLeft="@dimen/activity_horizontal_margin_x2"
     android:paddingTop="@dimen/activity_vertical_margin"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:textColor="@color/Gray" />
+        <!--  
+        android:layout_alignLeft="@+id/mainlist" 
+        android:layout_alignTop="@+id/mainlist" -->
+        
 
     <TextView
         android:id="@+id/title"
