@@ -206,11 +206,17 @@ public class MainActivity extends FragmentActivity
         // return current duration in milliseconds
         return currentDuration * 1000;
     }
-            
-    public boolean  playTrack(Track track){
+    //FIXME temporary method      
+    private boolean playTrack(Track track) {
+    	return playTrack(track, "");
+    }
+    
+    public boolean  playTrack(Track track, String albumImagePath){
         // Play song
         try {
             mPlayer.reset();
+            mBackground.setAlbumImage(albumImagePath);
+            //mBackground.invalidate();
             //TODO
             if (MainActivity.DEBUG) Log.e(LOG_TAG, track.getPath());
             mPlayer.setDataSource(track.getPath());

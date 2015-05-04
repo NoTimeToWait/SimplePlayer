@@ -34,9 +34,11 @@ public class DirectoryListFrag extends BackHandledListFragment{
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		mMusicData = MainActivity.getMusicData();
+		/*
 		String[] temp_folders = mMusicData.getFolders();
 		folders = new String[temp_folders.length];
-		System.arraycopy(temp_folders, 0, folders, 0, temp_folders.length);
+		System.arraycopy(temp_folders, 0, folders, 0, temp_folders.length);*/
+		folders = mMusicData.getFolders().toArray(new String[0]);
 		Arrays.sort(folders, new Comparator<String>(){
 			public int compare(String str1, String str2) {
 				int slash_position = str1.lastIndexOf('/');
@@ -77,7 +79,7 @@ public class DirectoryListFrag extends BackHandledListFragment{
                             		}
                             	else 
                             		for (int position : reverseSortedPositions) {
-                                        mMusicData.addTrackToPlaylist(mMusicData.getOffset(currentFolder)+position-HEADER_LISTNUM_OFFSET);
+                                        mMusicData.addTrackToPlaylist(currentFolder, position-HEADER_LISTNUM_OFFSET);
                                 		}
                                 //mAdapter.notifyDataSetChanged();
                             }

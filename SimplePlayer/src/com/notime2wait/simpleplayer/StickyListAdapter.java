@@ -5,6 +5,7 @@ import com.notime2wait.simpleplayer.MusicData.Track;
 import se.emilsjolander.stickylistheaders.StickyListHeadersAdapter;
 import android.content.Context;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,14 +17,14 @@ public class StickyListAdapter extends BaseAdapter implements
 StickyListHeadersAdapter {
 
 private LayoutInflater inflater;
-String[] folders;
+//String[] folders;
 Track[] tracks;
 
 public StickyListAdapter(Context context) {
 inflater = LayoutInflater.from(context);
-folders = MainActivity.getMusicData().getFolders();
+//folders = MainActivity.getMusicData().getFolders();
 tracks = MainActivity.getMusicData().getTracks();
-Log.v("Length", "Length"+folders.length);
+//Log.v("Length", "Length"+folders.length);
 //mCountries = context.getResources().getStringArray(R.array.countries);
 // mSectionIndices = getSectionIndices();
 // mSectionLetters = getSectionLetters();
@@ -73,12 +74,17 @@ Log.v("Length", "Length"+folders.length);
 		holder = (HeaderViewHolder) convertView.getTag();
 	}
 
-	String folder_item = MainActivity.getMusicData().getFolderName(position);//folders[position];
+	//String folder_item = MainActivity.getMusicData().getFolderName(position);//folders[position];
 	//String folder_item = getItem(position);
-
+	/*Track[] tracks = MainActivity.getMusicData().getTracks();
+	String folder_item = tracks[position].getPath();
 	int slash_position = folder_item.lastIndexOf('/');
-	String name = folder_item.substring(slash_position);    
-	holder.folderName.setText(name);
+	folder_item = folder_item.substring(0, slash_position); 
+	slash_position = folder_item.lastIndexOf('/');
+	String name = folder_item.substring(slash_position);   */
+	String folder_item = getHeadviewString(position);
+	int slash_position = folder_item.lastIndexOf('/');
+	holder.folderName.setText(folder_item.substring(slash_position));
 	holder.folderPath.setText(folder_item.substring(0, slash_position));
 
 	return convertView;
@@ -92,7 +98,7 @@ Log.v("Length", "Length"+folders.length);
 
 	@Override
 	public long getHeaderId(int position) {
-		String folder_item = MainActivity.getMusicData().getFolderName(position);
+		String folder_item = getHeadviewString(position);
 		int slash_position = folder_item.lastIndexOf('/');
 		return folder_item.substring(slash_position).hashCode();
 	}
@@ -100,6 +106,16 @@ Log.v("Length", "Length"+folders.length);
 
 	class ViewHolder {
 		TextView trackName;
+	}
+	
+	private String getHeadviewString(int position) {
+		Track[] tracks = MainActivity.getMusicData().getTracks();
+		String folder_item = tracks[position].getPath();
+		int slash_position = folder_item.lastIndexOf('/');
+		folder_item = folder_item.substring(0, slash_position); 
+		slash_position = folder_item.lastIndexOf('/');
+		return folder_item;  
+		
 	}
 
 }

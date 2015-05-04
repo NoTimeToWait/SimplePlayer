@@ -34,8 +34,8 @@ public class TrackListTabs extends Fragment{
                 DirectoryListFrag.class, null);
         mTabHost.addTab(mTabHost.newTabSpec("PlaylistTab").setIndicator("Playlists"),
                 PlaylistsFrag.class, null);
-        mTabHost.addTab(mTabHost.newTabSpec("AllMusicTab").setIndicator("All Music"),
-                AllMusicListFrag.class, null);
+       // mTabHost.addTab(mTabHost.newTabSpec("AllMusicTab").setIndicator("All Music"),
+       //         AllMusicListFrag.class, null);
         mTabHost.setCurrentTabByTag("DirectoryTab");
         
         return mTabHost;
