@@ -14,6 +14,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.NinePatchDrawable;
+import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -21,14 +22,23 @@ import android.view.View;
 import com.notime2wait.simpleplayer.MainActivity;
 import com.notime2wait.simpleplayer.R;
 import com.notime2wait.simpleplayer.MusicData.Track;
+import com.notime2wait.simpleplayer.visualization.IVisuals.OnVisualsUpdateListener;
 
-public class WaveformUtils implements IVisuals {
-	
-	
-	private Track mTrack;
-	private short[] mHeights;
+public class WaveformUtils extends AsyncTask<Track, Void, Bitmap> implements IVisuals {
+		
+	//private Track mTrack;
+	private short[] mHeights = new short[0];
+	double[] smoothedGains = new double[0];
+    private int gainHist[] = new int[256];
+    private int maxFrames;
+    
 	private int REQ_WIDTH=320; //should be the screen width in most cases
 	private int REQ_HEIGHT=45; //the height of waveform top part
+	private int UPDATE_MILESTONE=4; //a percentage milestone at which waveform visual update occurs
+	
+	private double maxGain;
+	private double minGain;
+	private int factor;
 	private double range; //diffrence between maxGain and minGain
 	private static boolean LATTER_SMOOTH = true;
 	private boolean isReady = false;
@@ -38,6 +48,9 @@ public class WaveformUtils implements IVisuals {
     private final Paint linePaint = new Paint();
     private final Paint maskPaint = new Paint();
     private NinePatchDrawable waveformBkgd;
+    
+    private CheapSoundFile mSoundFile;
+	OnVisualsUpdateListener mUpdateListener;
     
  // The matrix is stored in a single array, and its treated as follows: [ a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t ]
     // When applied to a color [r, g, b, a], the resulting color is computed as (after clamping) ;
@@ -75,326 +88,76 @@ public class WaveformUtils implements IVisuals {
 		return isReady;
 	}
 	
-	public void getWaveformGains() {
-		CheapSoundFile mSoundFile = CheapMP3.getFactory().create();
-		try {
-			mSoundFile.ReadFile(new File(mTrack.getPath()));
-			 /*int numFrames = mSoundFile.getNumFrames();
-			 //smooth amplitude gains and build gain histogram
+	public void getWaveformGains(Track track) {
+		mSoundFile = CheapMP3.getFactory().create();
+		mSoundFile.
+		setProgressListener(new CheapSoundFile.ProgressListener() {
 			
-			 	double maxGain = 1.0;
-			 // histogram of 256 bins to figure out the new scaled max and min
-		        int gainHist[] = new int[256];
-		        Arrays.fill(gainHist, 0);
-		        int[] frameGains = mSoundFile.getFrameGains();
-		        for (int i=0; i<numFrames; i++) {
-		        	if (i%100==0)
-		        	Log.e("WWWWW", "ValueN"+i+"="+frameGains[i]);
-		        }
-		        double[] smoothedGains = new double[numFrames];
-		        if (numFrames == 1) {
-		            smoothedGains[0] = frameGains[0];
-		        } else if (numFrames == 2) {
-		            smoothedGains[0] = frameGains[0];
-		            smoothedGains[1] = frameGains[1];
-		        } else if (numFrames > 2) {
-		            smoothedGains[0] = (double)(
-		                (frameGains[0] / 2.0) +
-		                (frameGains[1] / 2.0));
-		            for (int i = 1; i < numFrames - 1; i++) {
-		                smoothedGains[i] = (double)(
-		                    (frameGains[i - 1] / 3.0) +
-		                    (frameGains[i    ] / 3.0) +
-		                    (frameGains[i + 1] / 3.0));
-
-				        // Make sure the range is no more than 0 - 255
-		                if (smoothedGains[i]>255) smoothedGains[i]=255;
-		                else if (smoothedGains[i]<0) smoothedGains[i]=0;
-		                // Find max gain
-		                if (smoothedGains[i] > maxGain)
+			private int progressPercent;
+			private int previousFrame=-1;
+			
+			
+			public boolean reportProgress(double fractionComplete) {
+				int progressNewPercent = (int) (fractionComplete*100);
+				int numFrames = mSoundFile.getNumFrames();
+				if (numFrames<65) return true;
+				int[] frameGains = mSoundFile.getFrameGains();
+				//TODO:grow arrays 
+				if (frameGains.length>maxFrames) {
+					maxFrames = frameGains.length;
+					smoothedGains = new double[maxFrames];
+					Arrays.fill(smoothedGains, 0);
+					for (int i=1; i<numFrames-1; i++) {
+						smoothedGains[i] = (double)(
+			                    (frameGains[i-1] + frameGains[i] + frameGains[i+1])/3.0);
+			            if (smoothedGains[i] < 0)
+			                	smoothedGains[i] = 0;
+				        if (smoothedGains[i] > 255)
+				            	smoothedGains[i] = 255;
+				        if (smoothedGains[i] > maxGain)
+				                maxGain = smoothedGains[i];
+				            
+				        gainHist[(int) smoothedGains[i]]++;
+					}
+					
+					factor = (int) Math.ceil((double)maxFrames/REQ_WIDTH);
+			        if (factor == 0) factor = 1;
+					
+					return true;	
+				}
+		        //int gainHist[] = new int[256];
+		        int i = numFrames-2;
+		            smoothedGains[i] = (double)(
+		                    (frameGains[i-1] + frameGains[i] + frameGains[i+1])/3.0);
+		            if (smoothedGains[i] < 0)
+		                	smoothedGains[i] = 0;
+			        if (smoothedGains[i] > 255)
+			            	smoothedGains[i] = 255;
+			        if (smoothedGains[i] > maxGain)
 			                maxGain = smoothedGains[i];
-		                // Build histogram
-		                gainHist[(int)smoothedGains[i]]++;
-		                
-		            }
-		            smoothedGains[numFrames - 1] = (double)(
-		                (frameGains[numFrames - 2] / 2.0) +
-		                (frameGains[numFrames - 1] / 2.0));
-		        }
-
-		        Log.e("WWWWWW", "MaxGain"+maxGain);
+			            
+			        gainHist[(int) smoothedGains[i]]++;
 		        
-		        // Re-calibrate the min to be 5%
-		        double minGain = 0;
-		        int sum = 0;
-		        while (minGain < 255 && sum < numFrames / 20) {
-		            sum += gainHist[(int)minGain];
-		            minGain++;
-		        }
+		            //smoothedGains[numFrames - 1] = 1;
+		        //}
 
-		        // Re-calibrate the max to be 99%
-		        sum = 0;
-		        while (maxGain > 2 && sum < numFrames / 100) {
-		            sum += gainHist[(int)maxGain];
-		            maxGain--;
-		        }
-		        
-		        // array scaling factor to fit the image width on screen
-		        int factor = (int) Math.ceil((double)numFrames/REQ_WIDTH);
-		        if (factor == 0) factor = 1;
-
-		        // Compute the heights
-		        mHeights = new short[numFrames/factor];
-		        range = maxGain - minGain;
-		        double value = smoothedGains[1];
-		        int count = 0;
-		        for (int i = 0; i < numFrames; i++) {
-		        	
-		        	
-		        	value = smoothedGains[i]/2+value/2;
-		        	if (i%factor==0 && i>0) {
-		        		//Log.e("WWWWW", "Value"+value);
-		        		mHeights[count] =  (short) value;
-		        		if (value>maxGain) mHeights[count] =  (short) maxGain; 
-		        		mHeights[count] -=  minGain;
-		        		count++;
-		        	}
-		        }*/
-
+			        
+				
+				if (progressNewPercent!=progressPercent && progressNewPercent%UPDATE_MILESTONE==0) {
+					//onProgressUpdate(mSoundFile.getNumFrames(), mSoundFile.getFrameGains());
+					recalibrateHeights(numFrames, false);
+					//publishProgress(mSoundFile.getFrameGains() , new int[] {mSoundFile.getNumFrames()});
+					publishProgress();
+				}
+				progressPercent = progressNewPercent;
+				return true;
+			}
 			
 			
-			
-		     int numFrames = mSoundFile.getNumFrames();
-	        int[] frameGains = mSoundFile.getFrameGains();
-	        double[] smoothedGains = new double[numFrames];
+		});
+		try {
+			mSoundFile.ReadFile(new File(track.getPath()));
 	        
-	        double maxGain = 0;
-	        int gainHist[] = new int[256];
-	        
-	        if (numFrames == 1) {
-	            smoothedGains[0] = frameGains[0];
-	        } else if (numFrames == 2) {
-	            smoothedGains[0] = frameGains[0];
-	            smoothedGains[1] = frameGains[1];
-	        } else if (numFrames > 2) {
-	            smoothedGains[0] = 1;
-	            for (int i = 1; i < numFrames - 1; i++) {
-	                smoothedGains[i] = (double)(
-	                    (frameGains[i-1] + frameGains[i] + frameGains[i+1])/3.0);
-	                if (smoothedGains[i] < 0)
-	                	smoothedGains[i] = 0;
-		            if (smoothedGains[i] > 255)
-		            	smoothedGains[i] = 255;
-
-		            if (smoothedGains[i] > maxGain)
-		                maxGain = smoothedGains[i];
-		            
-		            gainHist[(int) smoothedGains[i]]++;
-	            }
-	            smoothedGains[numFrames - 1] = 1;
-	        }
-
-	        
-	        // Re-calibrate the min to be 2.5%
-	        double minGain = 0;
-	        int sum = 0;
-	        while (minGain < 255 && sum < numFrames / 40) {
-	            sum += gainHist[(int)minGain];
-	            minGain++;
-	        }
-
-	        // Re-calibrate the max to be 99%
-	        sum = 0;
-	        while (maxGain > 2 && sum < numFrames / 100) {
-	            sum += gainHist[(int)maxGain];
-	            maxGain--;
-	        }
-			
-	        // Compute the heights
-	       /* double[] heights = new double[numFrames];
-	        double range = maxGain - minGain;
-	        for (int i = 0; i < numFrames; i++) {
-	            double value = (smoothedGains[i] - minGain) / range;
-	            if (value < 0.0)
-	                value = 0.0;
-	            if (value > 1.0)
-	                value = 1.0;
-	            heights[i] = value;
-	        } 
-	        int factor = (int) Math.ceil((double)numFrames/REQ_WIDTH);
-	        if (factor == 0) factor = 1;
-
-	        // Compute the heights
-	        mHeights = new short[numFrames/factor];
-	        range = maxGain - minGain;
-	        double value = smoothedGains[1];
-	        int count = 0;
-	        for (int i = 0; i < mHeights.length; i++) {
-	        	value = heights[i*factor];
-            	for(int j=1; j<factor; j++) {
-            		value+= heights[i*factor+j];
-            	}
-            	value/=factor;
-            	mHeights[i] = (short) (value*REQ_HEIGHT);
-	        	
-	        }*/
-	        
-	        int factor = (int) Math.ceil((double)numFrames/REQ_WIDTH);
-	        if (factor == 0) factor = 1;
-	     // Compute the heights
-	        mHeights = new short[numFrames/factor];
-	        range = maxGain - minGain;
-	        double value = smoothedGains[1];
-	        int count = 0;
-	        int temp_index;
-	        for (int i = 0; i < mHeights.length; i++) {
-	        	if (i<3||i>mHeights.length-4) {
-	        		mHeights[i] = 0;
-	        		continue;
-	        	}
-	        	temp_index = i*factor;
-	        	value = smoothedGains[temp_index];// heights[i*factor];
-            	for(int j=1; j<factor; j++) {
-            		value+=  smoothedGains[temp_index+j];//heights[i*factor+j];
-            	}
-            	value/=(double)factor;
-            	value-= minGain;
-            	value/=range;
-            	if (value < 0.0) value = 0.0;
-	            if (value > 1.0) value = 1.0;
-            	mHeights[i] = (short) (value*REQ_HEIGHT);
-	        
-	        }
-	        
-	        /*
-	        mHeights = new short[numFrames/factor];
-	        range = maxGain - minGain;
-	        double value = smoothedGains[1];
-	        int count = 0;
-	        for (int i = 0; i < numFrames; i++) {
-	        	
-	        	
-	        	value = (heights[i]*REQ_HEIGHT)/2+value/2;
-	        	if (i%factor==0 && i>0) {
-	        		//Log.e("WWWWW", "Value"+value);
-	        		mHeights[count] =  (short) value;
-	        		//if (value>maxGain) mHeights[count] =  (short) maxGain; 
-	        		//mHeights[count] -=  minGain;
-	        		count++;
-	        	}
-	        }*/
-			
-			/*
-			int numFrames = mSoundFile.getNumFrames();
-	        int[] frameGains = mSoundFile.getFrameGains();
-	        double[] smoothedGains = new double[numFrames];
-	        if (numFrames == 1) {
-	            smoothedGains[0] = frameGains[0];
-	        } else if (numFrames == 2) {
-	            smoothedGains[0] = frameGains[0];
-	            smoothedGains[1] = frameGains[1];
-	        } else if (numFrames > 2) {
-	            smoothedGains[0] = (double)(
-	                (frameGains[0] / 2.0) +
-	                (frameGains[1] / 2.0));
-	            for (int i = 1; i < numFrames - 1; i++) {
-	                smoothedGains[i] = (double)(
-	                    (frameGains[i - 1] / 3.0) +
-	                    (frameGains[i    ] / 3.0) +
-	                    (frameGains[i + 1] / 3.0));
-
-	            }
-	            smoothedGains[numFrames - 1] = (double)(
-	                (frameGains[numFrames - 2] / 2.0) +
-	                (frameGains[numFrames - 1] / 2.0));
-	        }
-
-	        // Make sure the range is no more than 0 - 255
-	        double maxGain = 1.0;
-
-	        double scaleFactor = 1.0;
-	        for (int i = 0; i < numFrames; i++) {
-	            if (smoothedGains[i] > maxGain) {
-	                maxGain = smoothedGains[i];
-	            }
-	            
-	        }
-	        Log.e("WWWWWW", "MaxGain"+maxGain);
-	        if (maxGain > 255.0) {
-	            scaleFactor = 255 / maxGain;
-	        }        
-
-	        // Build histogram of 256 bins and figure out the new scaled max
-	        maxGain = 0;
-	        int gainHist[] = new int[256];
-	        for (int i = 0; i < numFrames; i++) {
-	            int smoothedGain = (int)(smoothedGains[i] * scaleFactor);
-	            if (smoothedGain < 0)
-	                smoothedGain = 0;
-	            if (smoothedGain > 255)
-	                smoothedGain = 255;
-
-	            if (smoothedGain > maxGain)
-	                maxGain = smoothedGain;
-
-	            gainHist[smoothedGain]++;
-	        }
-
-	        // Re-calibrate the min to be 5%
-	        double minGain = 0;
-	        int sum = 0;
-	        while (minGain < 255 && sum < numFrames / 20) {
-	            sum += gainHist[(int)minGain];
-	            minGain++;
-	        }
-
-	        // Re-calibrate the max to be 99%
-	        sum = 0;
-	        while (maxGain > 2 && sum < numFrames / 100) {
-	            sum += gainHist[(int)maxGain];
-	            maxGain--;
-	        }
-
-	        // Compute the heights
-	        double[] heights = new double[numFrames];
-	        double range = maxGain - minGain;
-	        for (int i = 0; i < numFrames; i++) {
-	            double value = (smoothedGains[i] * scaleFactor - minGain) / range;
-	            if (value < 0.0)
-	                value = 0.0;
-	            if (value > 1.0)
-	                value = 1.0;
-	            heights[i] = value;
-	        }
-
-	        int mNumZoomLevels = 7;
-	        int[] mLenByZoomLevel = new int[7];
-	        double[] mZoomFactorByZoomLevel = new double[7];
-	        mValuesByZoomLevel = new double[7][];
-
-	        // Level 1 is normal
-	        mLenByZoomLevel[1] = numFrames;
-	        mValuesByZoomLevel[1] = new double[mLenByZoomLevel[1]];
-	        mZoomFactorByZoomLevel[1] = 1.0;
-	        for (int i = 0; i < mLenByZoomLevel[1]; i++) {
-	            mValuesByZoomLevel[1][i] = heights[i];
-	        }
-
-	        double value = 0;
-	        
-	        mLenByZoomLevel[5] = mLenByZoomLevel[1] / 32;
-            mValuesByZoomLevel[5] = new double[mLenByZoomLevel[5]];
-            mHeights =  new short[mLenByZoomLevel[5]];
-            mZoomFactorByZoomLevel[5] = mZoomFactorByZoomLevel[1] / 32.0;
-            for (int i = 0; i < mLenByZoomLevel[5]; i++) {
-            	value = mValuesByZoomLevel[1][i*32];
-            	for(int j=1; j<16; j++) {
-            		value+= mValuesByZoomLevel[1][i*32+j];
-            	}
-            	value/=32;
-            	//mValuesByZoomLevel[5][i] = value;
-            	mHeights[i] = (short) (value*REQ_HEIGHT);
-            }*/
 		}
 		catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -405,6 +168,53 @@ public class WaveformUtils implements IVisuals {
 		isReady = true;
 	}
 	
+	
+	private void recalibrateHeights(int numFrames, boolean lastRecalibrate) {
+		// Re-calibrate the min to be 2.5%
+		minGain = 0;
+        int sum = 0;
+        while (minGain < 255 && sum < numFrames / 40) {
+            sum += gainHist[(int)minGain];
+            minGain++;
+        }
+
+        // Re-calibrate the max to be 99%
+        sum = 0;
+        while (maxGain > 2 && sum < numFrames / 100) {
+            sum += gainHist[(int)maxGain];
+            maxGain--;
+        }
+        
+        
+     // Compute the heights
+        int newLen = lastRecalibrate? mSoundFile.getNumFrames() : (int)(maxFrames*0.9);
+        newLen/=factor;
+        mHeights = new short[newLen];
+        range = maxGain - minGain;
+        double value = smoothedGains[1];
+        int count = 0;
+        int temp_index;
+        for (int i = 0; i < mHeights.length; i++) {
+        	if (i<3||i>mHeights.length-4) {
+        		mHeights[i] = 0;
+        		continue;
+        	}
+        	temp_index = i*factor;
+        	value = smoothedGains[temp_index];// heights[i*factor];
+        	for(int j=1; j<factor; j++) {
+        		value+=  smoothedGains[temp_index+j];//heights[i*factor+j];
+        	}
+        	value/=(double)factor;
+        	value-= minGain;
+        	value/=range;
+        	if (value < 0.0) value = 0.0;
+            if (value > 1.0) value = 1.0;
+        	mHeights[i] = (short) (value*REQ_HEIGHT);
+        
+        }
+	}
+	
+
 	public float[] getWaveformCoords() {
 		
 			//getWaveformGains();
@@ -414,7 +224,7 @@ public class WaveformUtils implements IVisuals {
 			int index=0;
 			short[] hist = new short[REQ_HEIGHT+1];
 			for (int i=1; i<mHeights.length-1; i++) {
-					hist[mHeights[i]]++;
+					if (mHeights[i]<REQ_HEIGHT&&mHeights[i]>0) hist[mHeights[i]]++;
 				
 				//if (mHeights[i]==mHeights[i-1]) mHeights[i] = (short) ((mHeights[i-1]+mHeights[i]+mHeights[i+1])/3.0);
 			}
@@ -430,7 +240,7 @@ public class WaveformUtils implements IVisuals {
 			if (div<0.5f) height_scale = (float) ((REQ_HEIGHT*3/4)/gainMax);
 			if (div<0.3f) height_scale = (float) ((REQ_HEIGHT/2)/gainMax);
 			if (div<0.15f) height_scale = (float) ((REQ_HEIGHT/3)/gainMax);
-			Log.e("WWWWW", "Gain "+gainMax+"Index"+index+" Div "+div+" Scale "+height_scale);
+			if (MainActivity.DEBUG) Log.e("WWWWW", "Gain "+gainMax+"Index"+index+" Div "+div+" Scale "+height_scale);
 			
 			for (int i=1; i<mHeights.length-1; i++) {
 				mHeights[i]*=height_scale;
@@ -466,73 +276,12 @@ public class WaveformUtils implements IVisuals {
 			    count++;
 			    
 		    }
-		    /*
-		    for (int i=1; i<REQ_WIDTH; i++) {
-
-		    	result[i][0] = i;  
-				result[i][2] = i; 
-			    if (remainder>5 && i%addFactor==0) {
-			    	addFrameHeight = (mHeights[count-1]+mHeights[count])/2f; 
-			    	result[i][1] = REQ_HEIGHT - addFrameHeight;
-				    result[i][3] = REQ_HEIGHT + addFrameHeight;
-					continue;
-			    }
-
-				result[i][1] = REQ_HEIGHT - mHeights[count];
-			    result[i][3] = REQ_HEIGHT + mHeights[count];
-			    count++;
-			    
-		    }*/
-		    
-		    /*
-		    float[][] result = new float[mHeights.length][4];
-		    for (int i=1; i<mHeights.length; i++) {
-
-		    	result[i][0] = i; 
-				result[i][1] = 0; 
-				result[i][2] = i; 
-			    result[i][3] = mHeights[i];
-			    
-		    }*/
-		    
-		    /*
-		    float[][] result = new float[mValuesByZoomLevel[5].length][4];
-		    for (int i=1; i<mValuesByZoomLevel[5].length; i++) {
-
-		    	result[i][0] = i; 
-				result[i][1] = 0; 
-				result[i][2] = i; 
-			    result[i][3] = (float) this.mValuesByZoomLevel[5][i]*REQ_HEIGHT;//mHeights[i];
-			    
-		    }*/
-		    
-			/*int[] temp = wav.getFrameGains();
-			int factor = temp.length/REQ_WIDTH;
-			result = new float[REQ_WIDTH][4];
-			if (MainActivity.DEBUG) Log.e("WWWWW", ""+temp.length+"f"+factor);
-			int i=1;
-			for (int j=factor; i<REQ_WIDTH; j++) {
-				
-				if (j%factor==0) {
-					if (MainActivity.DEBUG) Log.e("WWWWW", "tempN"+j+"="+temp[j]);
-				//int height=temp[j];
-				//since we don't have precise(and actually don't need precise) outline I just want to make it look prettier
-				//int hNext = temp[j+factor];
-				//int hPrev = (int) result[i-1][3];
-				//if ((hNext<height&&hPrev<height)||(hNext>height&&hPrev>height)) height = (hNext+hPrev)/2;
-				result[i][0] = i; 
-				result[i][1] = 0; 
-				result[i][2] = i; 
-				result[i][3] = temp[j]; 
-				i++;
-				}
-			}*/
-			
+		    			
 		return result;
 	}
 	
 	
-	private void update(){
+	private void updateBitmap(){
     	float[] coords = getWaveformCoords();
         		
     	int width = REQ_WIDTH;
@@ -552,18 +301,142 @@ public class WaveformUtils implements IVisuals {
         waveformBkgd.draw(cachedCanvas);
             //apply mask
         cachedCanvas.drawBitmap(alphaMask, 0, 0, maskPaint);
+
+		Log.e("UUUUUUUUUUU","UUUUUUUUUUUUU Width"+this.REQ_WIDTH);
             
     }
-	
-	public void setTrack(Track track){
-		mTrack = track;
-		getWaveformGains();
-	}
     
+	/*
+	public void setTrack(Track track){
+		//TODO change to doInBackground
+		
+		doInBackground(track);
+		
+	}*/
+    /*
     public Bitmap getBitmap(){
-    	update();
+    	updateBitmap();
     	return cachedBitmap;
+    }*/
+
+	@Override
+	protected Bitmap doInBackground(Track... tracks) {
+		// TODO Auto-generated method stub
+		Arrays.fill(gainHist, 0);
+		Arrays.fill(mHeights, (short) 0);
+		maxFrames = 0;
+		getWaveformGains(tracks[0]);
+		return null;
+	}
+	
+	@Override
+	protected void onProgressUpdate(Void... args) {
+		//int[] frameGains = args[0];
+		//int numFrames = args[1][0];
+		//updateGains(frameGains, numFrames);
+		updateBitmap();
+		mUpdateListener.onVisualsUpdate(cachedBitmap);
+	}
+	
+	@Override
+	protected void onPostExecute(Bitmap result) {
+		int[] frameGains = mSoundFile.getFrameGains();
+		int numFrames =mSoundFile.getNumFrames();
+		//updateGains(frameGains, numFrames);
+		recalibrateHeights(numFrames, true);
+		updateBitmap();
+		result = cachedBitmap;
+		Log.e("UUUUUUUUUUU","UUUUUUUUUUUUU Width"+this.REQ_WIDTH+" "+numFrames+"/"+frameGains.length);
+		mUpdateListener.onVisualsUpdate(cachedBitmap);
     }
+	
+	/*public void updateGains(int[] frameGains, int numFrames)
+	{
+		int newMaxFrames = frameGains.length;
+		//TODO:grow arrays 
+		if (newMaxFrames>maxFrames) {
+			smoothedGains = new double[maxFrames];
+			Arrays.fill(smoothedGains, 0);
+		}
+        double maxGain = 0;
+        //int gainHist[] = new int[256];
+        
+        if (numFrames == 1) {
+            smoothedGains[0] = frameGains[0];
+        } else if (numFrames == 2) {
+            smoothedGains[0] = frameGains[0];
+            smoothedGains[1] = frameGains[1];
+        } else if (numFrames > 2) {
+            smoothedGains[0] = 1;
+            for (int i = 1; i < numFrames - 1; i++) {
+                smoothedGains[i] = (double)(
+                    (frameGains[i-1] + frameGains[i] + frameGains[i+1])/3.0);
+                if (smoothedGains[i] < 0)
+                	smoothedGains[i] = 0;
+	            if (smoothedGains[i] > 255)
+	            	smoothedGains[i] = 255;
+
+	            if (smoothedGains[i] > maxGain)
+	                maxGain = smoothedGains[i];
+	            
+	            gainHist[(int) smoothedGains[i]]++;
+            }
+            smoothedGains[numFrames - 1] = 1;
+        }
+
+        
+        // Re-calibrate the min to be 2.5%
+        double minGain = 0;
+        int sum = 0;
+        while (minGain < 255 && sum < numFrames / 40) {
+            sum += gainHist[(int)minGain];
+            minGain++;
+        }
+
+        // Re-calibrate the max to be 99%
+        sum = 0;
+        while (maxGain > 2 && sum < numFrames / 100) {
+            sum += gainHist[(int)maxGain];
+            maxGain--;
+        }
+        
+        int factor = (int) Math.ceil((double)maxFrames/REQ_WIDTH);
+        if (factor == 0) factor = 1;
+     // Compute the heights
+        mHeights = new short[maxFrames/factor];
+        range = maxGain - minGain;
+        double value = smoothedGains[1];
+        int count = 0;
+        int temp_index;
+        for (int i = 0; i < mHeights.length; i++) {
+        	if (i<3||i>mHeights.length-4) {
+        		mHeights[i] = 0;
+        		continue;
+        	}
+        	temp_index = i*factor;
+        	value = smoothedGains[temp_index];// heights[i*factor];
+        	for(int j=1; j<factor; j++) {
+        		value+=  smoothedGains[temp_index+j];//heights[i*factor+j];
+        	}
+        	value/=(double)factor;
+        	value-= minGain;
+        	value/=range;
+        	if (value < 0.0) value = 0.0;
+            if (value > 1.0) value = 1.0;
+        	mHeights[i] = (short) (value*REQ_HEIGHT);
+        
+        }
+		// TODO Auto-generated method stub
+		return;
+	}*/
+
+	@Override
+	public void setOnVisualsUpdateListener(
+			OnVisualsUpdateListener visUpdateListener) {
+		mUpdateListener = visUpdateListener;
+		
+	}
+	
 	
 	/*
 	public class CachedDrawingView extends View {

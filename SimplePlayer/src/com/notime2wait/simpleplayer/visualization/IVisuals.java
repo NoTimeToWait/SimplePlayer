@@ -1,13 +1,21 @@
 package com.notime2wait.simpleplayer.visualization;
 
+import android.graphics.Bitmap;
+
 import com.notime2wait.simpleplayer.MusicData.Track;
 
 public interface IVisuals {
 	
-	public boolean isReady();
+	public interface OnVisualsUpdateListener {
+			public void onVisualsUpdate(Bitmap cachedBitmap);
+	}
 	
-	public float[] getWaveformCoords() ;
+	//public boolean isReady();
 	
-	public void setTrack(Track track);
+	public void setOnVisualsUpdateListener(OnVisualsUpdateListener visUpdateListener);
+	
+	//public float[] getWaveformCoords() ;
+	
+	//public void setTrack(Track track);
 
 }

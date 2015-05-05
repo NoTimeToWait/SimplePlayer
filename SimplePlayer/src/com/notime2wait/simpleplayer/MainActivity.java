@@ -52,7 +52,7 @@ public class MainActivity extends FragmentActivity
 	private static String LOG_TAG = MainActivity.class.getName(); 
 	private static int PROGRESS_UPDATE_TIME = 1000;
 	private static MusicData mMusicData = new MusicData();
-	private static IVisuals mVisuals;
+	//private static WaveformUtils mVisuals;
 	
 	public static float density; 
 	public static boolean DEBUG = true;
@@ -87,10 +87,10 @@ public class MainActivity extends FragmentActivity
 	public static int getSessionId() {
 		return mSessionId;
 	}
-	
+	/*
 	public static IVisuals getVisuals() {
 		return mVisuals;
-	}
+	}*/
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -145,8 +145,7 @@ public class MainActivity extends FragmentActivity
         mProgressBar.setProgressDrawable(null);
         
         
-        mVisuals = new WaveformUtils(getResources().getDisplayMetrics().widthPixels-(int)(16*density), (int) (45*density), this);
-
+        
         mTitle = (TextView) findViewById(R.id.track_label);
         mTitleDescr = (TextView) findViewById(R.id.track_label_descr);
         songCurrentDurationLabel = (TextView) findViewById(R.id.current_duration);
@@ -249,12 +248,25 @@ public class MainActivity extends FragmentActivity
             
              
              mHandler.postDelayed(updateProgressBarTask, PROGRESS_UPDATE_TIME);
-             mVisuals.setTrack(track);
-             
+             //mVisuals.setTrack(track);
+             WaveformUtils mVisuals = new WaveformUtils(getResources().getDisplayMetrics().widthPixels-(int)(16*density), (int) (45*density), this);
+             mVisuals.setOnVisualsUpdateListener(new IVisuals.OnVisualsUpdateListener() {
+
+				@Override
+				public void onVisualsUpdate(Bitmap cachedBitmap) {
+
+		             //TODO: Change method to setBgResource
+					BitmapDrawable drawable = new BitmapDrawable(cachedBitmap);
+		             mProgressBar.setBackgroundDrawable(drawable);
+				}
+            	 
+             });
+             mVisuals.execute(track);
+             /*
              //TODO: Change method to setBgResource
              BitmapDrawable drawable = new BitmapDrawable(((WaveformUtils) mVisuals).getBitmap());
              //mProgressBar.setBackgroundDrawable(getResources().getDrawable(R.id.waveform));
-             mProgressBar.setBackgroundDrawable(drawable);;
+             mProgressBar.setBackgroundDrawable(drawable);*/
             return true;
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
