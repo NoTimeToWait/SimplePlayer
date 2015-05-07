@@ -14,108 +14,147 @@ import android.media.audiofx.Visualizer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.ListFragment;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import java.io.IOException;
 
 import com.notime2wait.simpleplayer.MainActivity;
+import com.notime2wait.simpleplayer.R;
 
-public class EqualizerFrag extends Fragment {
+public class EqualizerFrag extends ListFragment{
     private static final String LOG_TAG = EqualizerFrag.class.getName();
 
     
     //private Visualizer mVisualizer;
     private Equalizer mEqualizer;
-
+    private int HEADER_LISTNUM_OFFSET = 0;
+	private ArrayAdapter<SeekBar> equalizerAdapter;
     private LinearLayout mLinearLayout;
-    private TextView mStatusTextView;
+    private int mDefaultGain;
+    private View mHeaderView;
+    private SeekBar[] bands;
 
-        
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, 
-            Bundle savedInstanceState) {
-    	mLinearLayout = new LinearLayout(getActivity());
-        mLinearLayout.setOrientation(LinearLayout.VERTICAL);
-        float SCALE = container.getContext().getResources().getDisplayMetrics().density;
-        mLinearLayout.setPadding((int) (16*SCALE), (int) (8*SCALE), (int) (16*SCALE), 0);
-        setupEqualizerFxAndUI();
-        return mLinearLayout;
-    }
+    @Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
 
-    private void setupEqualizerFxAndUI() {
-        // Create the Equalizer object (an AudioEffect subclass) and attach it to our media player,
-        // with a default priority (0).
         mEqualizer = new Equalizer(0, MainActivity.getSessionId());
         mEqualizer.setEnabled(true);
-
-        /*TextView eqTextView = new TextView(this.getActivity());
-        eqTextView.setText("Equalizer:");
-        mLinearLayout.addView(eqTextView);*/
-
-        short bands = mEqualizer.getNumberOfBands();
-
-        final short minEQLevel = mEqualizer.getBandLevelRange()[0];
-        final short maxEQLevel = mEqualizer.getBandLevelRange()[1];
-
-        for (short i = 0; i < bands; i++) {
-            final short band = i;
-
-            TextView freqTextView = new TextView(getActivity());
-            freqTextView.setLayoutParams(new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.FILL_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT));
-            freqTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-            freqTextView.setText((mEqualizer.getCenterFreq(band) / 1000) + " Hz");
-            mLinearLayout.addView(freqTextView);
-
-            LinearLayout row = new LinearLayout(getActivity());
-            row.setOrientation(LinearLayout.HORIZONTAL);
-
-            TextView minDbTextView = new TextView(getActivity());
-            minDbTextView.setLayoutParams(new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT));
-            minDbTextView.setText((minEQLevel / 100) + " dB");
-
-            TextView maxDbTextView = new TextView(getActivity());
-            maxDbTextView.setLayoutParams(new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT));
-            maxDbTextView.setText((maxEQLevel / 100) + " dB");
-
-            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.FILL_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-            layoutParams.weight = 1;
-            SeekBar bar = new SeekBar(getActivity());
-            bar.setLayoutParams(layoutParams);
-            bar.setMax(maxEQLevel - minEQLevel);
-            bar.setProgress(mEqualizer.getBandLevel(band));
-
-            bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                public void onProgressChanged(SeekBar seekBar, int progress,
-                        boolean fromUser) {
-                    mEqualizer.setBandLevel(band, (short) (progress + minEQLevel));
-                }
-
-                public void onStartTrackingTouch(SeekBar seekBar) {}
-                public void onStopTrackingTouch(SeekBar seekBar) {}
-            });
-
-            row.addView(minDbTextView);
-            row.addView(bar);
-            row.addView(maxDbTextView);
-
-            mLinearLayout.addView(row);
-        }
+        bands = new SeekBar[mEqualizer.getNumberOfBands()];
+        
     }
+        
+    @Override
+	public void onActivityCreated(Bundle savedInstanceState) {
+	    super.onActivityCreated(savedInstanceState);
+	    getListView().setDividerHeight(0);
+        getListView().setDivider(null);
+        float SCALE = getActivity().getResources().getDisplayMetrics().density;
+        getListView().setPadding((int) (16*SCALE), (int) (8*SCALE), (int) (16*SCALE), 0);
+        prepareHeaderView();
+	    equalizerAdapter = getEqualizerAdapter();
+	    setListAdapter(equalizerAdapter);
+	    //setListShownNoAnimation(true);
+    }
+    
+    private void prepareHeaderView() {	
+    	if (mHeaderView!=null) return;
+    	final short minEQLevel = mEqualizer.getBandLevelRange()[0];
+    	final short maxEQLevel = mEqualizer.getBandLevelRange()[1];
+		mHeaderView = getActivity().getLayoutInflater().inflate(R.layout.equalizer_band, null);
+		TextView freqTextView = (TextView)mHeaderView.findViewById(R.id.bandFrequency);
+	    freqTextView.setText("Amplify");
+		TextView minDbTextView = (TextView)mHeaderView.findViewById(R.id.minDb);
+        minDbTextView.setText((minEQLevel / 100) + " dB");
+        TextView maxDbTextView = (TextView)mHeaderView.findViewById(R.id.maxDb);
+        maxDbTextView.setText((maxEQLevel / 100) + " dB");
+        SeekBar bar = (SeekBar)mHeaderView.findViewById(R.id.bandSeekBar);
+        bar.setMax((maxEQLevel-minEQLevel));
+        bar.setProgress((maxEQLevel-minEQLevel)/2);
+
+        bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        	private int oldAmp=0;
+        	
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            	for (short i=0; i<mEqualizer.getNumberOfBands(); i++)
+            		//mEqualizer.setBandLevel(i, (short) (progress+minEQLevel+mEqualizer.getBandLevel(i)));
+            		bands[i].setProgress(progress+minEQLevel+bands[i].getProgress()-oldAmp);
+            	oldAmp = progress+minEQLevel;
+            }
+
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+    }
+    
+    private ArrayAdapter<SeekBar> getEqualizerAdapter() {
+
+        getListView().addHeaderView(mHeaderView);
+		return new ArrayAdapter<SeekBar>(getActivity(),
+			        R.layout.equalizer_band, bands) {
+			  
+			  final short minEQLevel=  mEqualizer.getBandLevelRange()[0];
+			  final short maxEQLevel = mEqualizer.getBandLevelRange()[1];
+
+			  @Override
+			  public View getView(int position, View convertView, ViewGroup parent) {
+			    View band_view = convertView;
+			    final short band = (short) (position-HEADER_LISTNUM_OFFSET);
+			    if (band_view == null) {
+			       LayoutInflater inflater = getActivity().getLayoutInflater();
+			    	//LayoutInflater inflater = LayoutInflater.from(getContext());
+			    	band_view = inflater.inflate(R.layout.equalizer_band, parent, false);
+			    }
+			    TextView freqTextView = (TextView)band_view.findViewById(R.id.bandFrequency);
+			    freqTextView.setText((mEqualizer.getCenterFreq(band) / 1000) + " Hz");
+			    
+			    TextView minDbTextView = (TextView)band_view.findViewById(R.id.minDb);
+	            minDbTextView.setText((minEQLevel / 100) + " dB");
+	            TextView maxDbTextView = (TextView)band_view.findViewById(R.id.maxDb);
+	            maxDbTextView.setText((maxEQLevel / 100) + " dB");
+	            
+	            bands[band] = (SeekBar)band_view.findViewById(R.id.bandSeekBar);
+	            bands[band].setMax(maxEQLevel-minEQLevel);
+	            bands[band].setProgress(mEqualizer.getBandLevel(band)+(maxEQLevel-minEQLevel)/2);
+
+	            bands[band].setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+	                public void onProgressChanged(SeekBar seekBar, int progress,
+	                        boolean fromUser) {
+	                    mEqualizer.setBandLevel(band, (short) (progress+minEQLevel));
+	                }
+
+	                public void onStartTrackingTouch(SeekBar seekBar) {}
+	                public void onStopTrackingTouch(SeekBar seekBar) {}
+	            });
+
+
+			    return band_view;
+			  }
+			  
+		    }; 
+	}
+
+    @Override
+	  public void onDestroyView() {
+		super.onDestroyView();
+		  setListAdapter(null);
+		 // initialized = false;
+		  //mHomePlaylist = null;
+	  }
+        
 }
+
+
    
 /*
     @Override

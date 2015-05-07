@@ -109,7 +109,7 @@ public class MainActivity extends FragmentActivity
         slidingMenu = (SlidingMenu) findViewById(R.id.slidingmenu);
         slidingMenu.setMode(SlidingMenu.LEFT_RIGHT);
         slidingMenu.setSecondaryMenu(R.layout.right_slide);
-        slidingMenu.showMenu(false);
+        //slidingMenu.showMenu(false);
         slidingMenu.setOnCloseListener(new OnCloseListener() {
 
 			@Override
@@ -135,6 +135,7 @@ public class MainActivity extends FragmentActivity
         //stickyList.setAdapter(mAdapter);
         mBackground = (BgView) findViewById(R.id.background);
         mBackground.setDefaultBackground();
+        //mBackground.setAlbumImage("/storage/sdcard0/Android/data/com.android.providers.media/albumthumbs/1378487395697");
         
         mBtnPlay = getButtonPlay();
         mBtnPrev = getButtonPrev();
@@ -206,16 +207,16 @@ public class MainActivity extends FragmentActivity
         return currentDuration * 1000;
     }
     //FIXME temporary method      
-    private boolean playTrack(Track track) {
-    	return playTrack(track, "");
-    }
+    //private boolean playTrack(Track track) {
+    //	return playTrack(track, "");
+    //}
     
     public boolean  playTrack(Track track, String albumImagePath){
         // Play song
         try {
             mPlayer.reset();
             mBackground.setAlbumImage(albumImagePath);
-            //mBackground.invalidate();
+            mBackground.invalidate();
             //TODO
             if (MainActivity.DEBUG) Log.e(LOG_TAG, track.getPath());
             mPlayer.setDataSource(track.getPath());
@@ -323,7 +324,7 @@ public class MainActivity extends FragmentActivity
         if(isRepeat)  trackToPlay = getCurrentTrack();
         else if(isShuffle) trackToPlay = getRandomTrack();
         else trackToPlay = getNextTrack();
-        playTrack(trackToPlay);
+        if (trackToPlay!=null) playTrack(trackToPlay, mMusicData.getAlbumArt(trackToPlay));
     }
     //TODO:finish these methods
 	public boolean isPlaying() {
@@ -331,15 +332,15 @@ public class MainActivity extends FragmentActivity
 	}
 	
 	private Track getCurrentTrack() {
-    	return mMusicData.new Track("", "", "", "");
+    	return mMusicData.getCurrentPlaylist().getCurrentTrack();
     }
 	
     private Track getNextTrack() {
-    	return mMusicData.new Track("", "", "", "");
+    	return mMusicData.getCurrentPlaylist().getNext();
     }
     
     private Track getPrevTrack() {
-    	return mMusicData.new Track("", "", "", "");
+    	return mMusicData.getCurrentPlaylist().getPrev();
     }
     
     private Track getRandomTrack() {
@@ -353,7 +354,8 @@ public class MainActivity extends FragmentActivity
     		 
             @Override
             public void onClick(View arg0) {
-                playTrack(getNextTrack());
+            	Track trackToPlay = getNextTrack();
+                if (trackToPlay!=null) playTrack(trackToPlay, mMusicData.getAlbumArt(trackToPlay));
             }
         });
         return mBtnNext;
@@ -366,7 +368,8 @@ public class MainActivity extends FragmentActivity
     		 
             @Override
             public void onClick(View arg0) {
-                playTrack(getPrevTrack());
+            	Track trackToPlay = getPrevTrack();
+            	if (trackToPlay!=null) playTrack(trackToPlay, mMusicData.getAlbumArt(trackToPlay));
             }
         });
         return mBtn;
@@ -383,12 +386,12 @@ public class MainActivity extends FragmentActivity
                 if(mPlayer.isPlaying()){
                     	mPlayer.pause();
 
-                    	if (DEBUG) Log.e("WWWWW", "PPPPP");
+                    	//if (DEBUG) Log.e("WWWWW", "PPPPP");
                         // Changing button image to play button
                         //mBtnPlay.setImageResource(R.drawable.btn_play);
                 }else{
                     	mPlayer.start();
-                    	if (DEBUG) Log.e("WWWWW", "SSSSS");
+                    	//if (DEBUG) Log.e("WWWWW", "SSSSS");
                         // Changing button image to pause button
                         //mBtnPlay.setImageResource(R.drawable.btn_pause);
                 }

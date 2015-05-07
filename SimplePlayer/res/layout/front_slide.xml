@@ -1,5 +1,6 @@
  
  <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:tools="http://schemas.android.com/tools"
     
     android:id="@+id/frontslide_framelayout"
     android:colorBackgroundCacheHint="#00000000"
@@ -16,33 +17,42 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"> 
     <!-- Player Buttons -->
-        <LinearLayout
+        <LinearLayout 
             android:id="@+id/buttons"
+            
             android:layout_width="match_parent"
-            android:layout_height="115dp"
+            android:layout_height="96dp"
             android:orientation="horizontal"
             android:layout_alignParentBottom="true"
-            android:weightSum="10">
+            android:paddingLeft="16dp"
+             android:paddingRight="16dp"
+            android:weightSum="9">
             <ImageButton
                 android:id="@+id/btn_prev"
                 android:layout_width="0dp"
         		android:layout_height="match_parent"
                 android:layout_weight="3"
+                android:src="@drawable/btn_prev"
                 android:background="@null"/>
             <ImageButton
                 android:id="@+id/btn_play"
                 android:layout_width="0dp"
         		android:layout_height="match_parent"
-                android:layout_weight="4"
+                android:layout_weight="3"
+                android:src="@drawable/btn_play"
                 android:background="@null"/>
             <ImageButton
                 android:id="@+id/btn_next"
                 android:layout_width="0dp"
         		android:layout_height="match_parent"
                 android:layout_weight="3"
+                android:src="@drawable/btn_next"
                 android:background="@null"/>
         </LinearLayout>
  
+                <!-- andriod:src="@drawable/btn_prev_icn.png" -->
+                <!-- andriod:src="@drawable/btn_next_icn.png" -->
+                <!-- andriod:src="@drawable/btn_play_icn.png" -->
     <!-- Progress Bar/Seek bar -->
     <SeekBar
             android:id="@+id/music_progressbar"

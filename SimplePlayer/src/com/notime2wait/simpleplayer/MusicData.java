@@ -98,7 +98,7 @@ public class MusicData {
 		return path;
 	}
 	
-	public Playlist getCurrentPlaylist() {
+	public IPlaylist<Track> getCurrentPlaylist() {
 		return mCurrentPlaylist;
 	}
 	
@@ -491,11 +491,11 @@ public class MusicData {
 		}
 		
 		public Track getNext() {
-			return playlist.get(mCurrentTrackIndex++);
+			return mCurrentTrackIndex<playlist.size()-1? playlist.get(++mCurrentTrackIndex) : null;
 		}
 		
 		public Track getPrev() {
-			return playlist.get(mCurrentTrackIndex--);
+			return mCurrentTrackIndex>0? playlist.get(--mCurrentTrackIndex) : null;
 		}
 		
 		public Track getFirst() {
