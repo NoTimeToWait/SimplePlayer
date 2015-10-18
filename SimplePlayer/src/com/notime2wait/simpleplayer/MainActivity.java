@@ -579,6 +579,8 @@ public class MainActivity extends FragmentActivity
             @Override
             public void onClick(View v) {
                 if(getMusicData().getCurrentPlaylist().getPlaylistSize()==0) return; 
+                if (!mMusicService.requestAudioFocus()) return;
+                
                 mBtn.setImageResource(mMusicService.isPlaying()? R.drawable.btn_play_icn : R.drawable.btn_pause_icn);
                 //DO NOT DELETE
                 //mBtn.setImageResource("pause".equals(mBtn.getContentDescription())? R.drawable.btn_play_icn : R.drawable.btn_pause_icn);

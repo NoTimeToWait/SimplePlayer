@@ -14,6 +14,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.AudioManager;
+import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.*;
 import android.os.AsyncTask;
@@ -50,8 +52,33 @@ public class MusicService extends Service {
     private RemoteViews mRemoteViews;
     private NotificationCompat.Builder mNotificationBuilder;
     private BroadcastReceiver mBroadcastReceiver;
+    //private RemoteControlReceiver mRemoteControlReceiver;
+    private boolean mAudioFocusGranted = false;
+    private boolean wasPlayingOnFocusChange = false;
     
     private final Set<TrackChangeObserver> observers = new HashSet<TrackChangeObserver>();
+    
+    private OnAudioFocusChangeListener audioFocusListener = new OnAudioFocusChangeListener() {
+	    public void onAudioFocusChange(int focusChange) {
+	    	
+	    	switch (focusChange) {
+	    		case AudioManager.AUDIOFOCUS_GAIN:
+	    			mAudioFocusGranted = true;
+	    			if(wasPlayingOnFocusChange) 
+				    	start();
+	    		break;
+	    		case AudioManager.AUDIOFOCUS_LOSS:
+	    			((AudioManager) MusicService.this.getSystemService(Context.AUDIO_SERVICE)).abandonAudioFocus(this);
+	    		case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+	    		case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+	    			mAudioFocusGranted = false;
+	    			wasPlayingOnFocusChange = mPlayer.isPlaying();
+	    			pause();
+	    			break;
+	    	}
+	    	
+	    }
+	};
     
     public boolean justStarted() {
     	return justStarted;
@@ -87,6 +114,20 @@ public class MusicService extends Service {
 			obs.update(track, albumImagePath, getDuration());
 	}
 	
+	public boolean requestAudioFocus() {
+		if (!mAudioFocusGranted) {
+			AudioManager am = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
+			int result = am.requestAudioFocus(audioFocusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+			if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+				//am.registerMediaButtonEventReceiver(RemoteControlReceiver);
+				mAudioFocusGranted = true;
+			}
+		}
+		return mAudioFocusGranted;
+	}
+	
+	
+	
 	public int getDuration() {
 		return mPlayer.getDuration();
 	}
@@ -110,7 +151,7 @@ public class MusicService extends Service {
 	
 	public void start() {
 		mPlayer.start();
-		if (mRemoteViews!=null) {
+		if (mRemoteViews!=null ) {
 			mRemoteViews.setImageViewResource(R.id.btn_ntf_play, R.drawable.btn_pause_icn);
 			updateNotification();
 		}
@@ -146,7 +187,7 @@ public class MusicService extends Service {
 			mPlayer.reset();
 			mPlayer.setDataSource(track.getPath());
 			mPlayer.prepare();
-			if (!prepareOnly) mPlayer.start();
+			if (!prepareOnly && requestAudioFocus()) mPlayer.start();
 			if (mRemoteViews!=null) {
 					mRemoteViews.setTextViewText(R.id.notification_descr, track.getTitle()/*+" - "+track.getArtist()*/);
 					updateNotification();
@@ -204,6 +245,7 @@ public class MusicService extends Service {
 				if (ACTION_NEXT.equals(action)) playNext();
 				if (ACTION_PREV.equals(action)) playPrevious();
 				if (ACTION_PLAY.equals(action)) {
+					if (!requestAudioFocus()) return;
 					if (isPlaying()) pause(); 
 					else start();		
 				}
@@ -313,6 +355,8 @@ public class MusicService extends Service {
 	@Override
     public void onDestroy() {
     	super.onDestroy();
+
+		if (mAudioFocusGranted) ((AudioManager) this.getSystemService(Context.AUDIO_SERVICE)).abandonAudioFocus(audioFocusListener);
     	if (mBroadcastReceiver!=null) LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver);
 	}
 	
