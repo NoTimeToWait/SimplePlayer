@@ -2,7 +2,7 @@ package com.notime2wait.simpleplayer.visualization;
 
 import android.graphics.Bitmap;
 
-import com.notime2wait.simpleplayer.MusicData.Track;
+import com.notime2wait.simpleplayer.Track;
 
 public interface IVisuals {
 	

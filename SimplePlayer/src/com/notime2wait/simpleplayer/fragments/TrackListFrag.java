@@ -18,7 +18,7 @@ import com.notime2wait.simpleplayer.MainActivity;
 import com.notime2wait.simpleplayer.MusicData;
 import com.notime2wait.simpleplayer.PlaylistDbHelper;
 import com.notime2wait.simpleplayer.R;
-import com.notime2wait.simpleplayer.MusicData.Track;
+import com.notime2wait.simpleplayer.Track;
 import com.notime2wait.simpleplayer.R.id;
 import com.notime2wait.simpleplayer.R.layout;
 
@@ -93,7 +93,7 @@ public class TrackListFrag extends ListFragment{
 		prepareHeaderView();
 		
 		DragSortListView listView = (DragSortListView) inflater.inflate(R.layout.dragndrop_frag, container, false);
-
+		listView.setDivider(null);
 		//mController = getController(listView);
 		listView.setFloatViewManager(getController(listView));
 		listView.setOnTouchListener(getController(listView));
@@ -180,8 +180,8 @@ public class TrackListFrag extends ListFragment{
 			 public void onClick(View v) {
 				 
 				 PlaylistDbHelper dbHelper = mMusicData.getPlaylistDbHelper();
-				 SQLiteDatabase db = dbHelper.getWritableDatabase();
-				 dbHelper.savePlaylist(dbHelper.getWritableDatabase(), mPlaylist);
+				 //SQLiteDatabase db = dbHelper.getWritableDatabase();
+				 dbHelper.savePlaylist(mPlaylist);
 			 }
 		});
 				
@@ -304,7 +304,7 @@ public class TrackListFrag extends ListFragment{
 		}
 		if (!initialized)
 			addHeaderView();
-		return mPlaylist.getPlayListAdapter(getActivity(), R.layout.folderlist_item);
+		return mPlaylist.getPlayListAdapter(getActivity(), R.layout.playlist_item);
 		  /*return new ArrayAdapter<Track>(getActivity(),
 			        R.layout.folderlist_item, mPlaylist.getTracksList()) {
 		    
@@ -361,19 +361,19 @@ public class TrackListFrag extends ListFragment{
 		    @Override
 		    public void remove(int position) {
 
-		    	int currentPlayingTrack = mPlaylist.getCurrentTrackIndex();
+		    	//int currentPlayingTrack = mPlaylist.getCurrentTrackIndex();
 
-		    	if (MainActivity.DEBUG) Log.e(LOG_TAG, "remove pos:"+position+"current pos:"+currentPlayingTrack);
+		    	//if (MainActivity.DEBUG) Log.e(LOG_TAG, "remove pos:"+position+"current pos:"+currentPlayingTrack);
 		    	mPlaylist.remove(position); //changes current track index in its method declaration
 		    	//mAdapter.notifyDataSetChanged();
-		    	if (!mMusicData.isHomePlaylist()) return;
+		    	/*if (!mMusicData.isHomePlaylist()) return;
 		    	if (mPlaylist.getCurrentTrackIndex()==-1) {
 		    		mMusicData.stopMusic();
 		    		return;
 		    	}
-		    	if (position==currentPlayingTrack&&mMusicData.isPlaying())
-		    		mMusicData.playTrack(mPlaylist.getCurrentTrackIndex(), mPlaylist);
-		    	if (MainActivity.DEBUG) Log.e(LOG_TAG, "remove pos:"+position+"current pos:"+currentPlayingTrack);
+		    	if (mMusicData.isPlaying())//(position==currentPlayingTrack&&mMusicData.isPlaying())
+		    		mMusicData.playTrack(mPlaylist.getCurrentTrackIndex(), mPlaylist);*/
+		    	//if (MainActivity.DEBUG) Log.e(LOG_TAG, "remove pos:"+position+"current pos:"+currentPlayingTrack);
                 /*int temp_position = position-HEADER_LISTNUM_OFFSET;      			
                 mAdapter.remove(mAdapter.getItem(position-HEADER_LISTNUM_OFFSET));
                 mAdapter.notifyDataSetChanged();
@@ -393,12 +393,13 @@ public class TrackListFrag extends ListFragment{
 	  	@Override
 		  public void onDestroyView() {
 	  		super.onDestroyView();
-			  setListAdapter(null);
-			  initialized = false;
-			  MainActivity.handleUndoAction(null); //hide any popups produced by this fragment
-			  mPlaylist = null;
-			  mHistoryButtonFlag = true;
-			  //mHomePlaylist = null;
+			setListAdapter(null);
+			initialized = false;
+			MainActivity.handleUndoAction(null); //hide any popups produced by this fragment
+			mPlaylist = null;
+			mHistoryButtonFlag = true;
+			mMusicData.setHistoryIndex(mMusicData.getHomeIndex());
+			//mHomePlaylist = null;
 		  }
 }
 

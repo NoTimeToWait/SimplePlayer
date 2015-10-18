@@ -11,115 +11,83 @@
         android:id="@+id/background"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        />	
-        
-    <RelativeLayout     
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"> 
-    <!-- Player Buttons -->
-        <LinearLayout 
-            android:id="@+id/buttons"
-            
-            android:layout_width="match_parent"
-            android:layout_height="96dp"
-            android:orientation="horizontal"
-            android:layout_alignParentBottom="true"
-            android:paddingLeft="16dp"
-             android:paddingRight="16dp"
-            android:weightSum="9">
-            <ImageButton
-                android:id="@+id/btn_prev"
-                android:layout_width="0dp"
-        		android:layout_height="match_parent"
-                android:layout_weight="3"
-                android:src="@drawable/btn_prev"
-                android:background="@null"/>
-            <ImageButton
-                android:id="@+id/btn_play"
-                android:layout_width="0dp"
-        		android:layout_height="match_parent"
-                android:layout_weight="3"
-                android:src="@drawable/btn_play"
-                android:background="@null"/>
-            <ImageButton
-                android:id="@+id/btn_next"
-                android:layout_width="0dp"
-        		android:layout_height="match_parent"
-                android:layout_weight="3"
-                android:src="@drawable/btn_next"
-                android:background="@null"/>
-        </LinearLayout>
- 
-                <!-- andriod:src="@drawable/btn_prev_icn.png" -->
-                <!-- andriod:src="@drawable/btn_next_icn.png" -->
-                <!-- andriod:src="@drawable/btn_play_icn.png" -->
-    <!-- Progress Bar/Seek bar -->
-    <SeekBar
-            android:id="@+id/music_progressbar"
-             android:layout_width="match_parent"
-             android:layout_height="67dp"
-             
-             android:layout_marginBottom="10dp"
-             android:layout_marginLeft="8dp"
-             android:layout_marginRight="8dp"
-             
-             android:paddingLeft="0dp"
-             android:paddingRight="0dp"
-             android:layout_above="@id/buttons"/>
-    <!-- android:layout_marginRight="20dp"
-             android:layout_marginLeft="20dp"
-              -->
- 	<TextView
-            android:id="@+id/total_duration"
-            android:text="1:11"
-       		android:layout_above="@id/buttons"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="50dp"
-            android:layout_marginRight="25dp"
-            android:layout_alignParentRight="true"
-            android:textColor="#eeeeee"
-            android:textStyle="bold"/>
- 	
-    <TextView
-            android:id="@+id/current_duration"
-            android:text="0:00"
-       		android:layout_above="@id/buttons"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="50dp"
-            android:layout_marginLeft="25dp"
-            android:layout_alignParentLeft="true"
-            android:textColor="#eeeeee"
-            android:textStyle="bold"/>
+    />	
+     
     
-    <TextView
-        	android:text="LLLLLLLLLLLLLLLLLLLLAAAAAAAAAAAAAAAAA"
-            android:id="@+id/track_label_descr"
+    <LinearLayout 
+    	android:layout_width="match_parent"
+   		android:layout_height="wrap_content"
+   	 	android:orientation="vertical"
+    	android:layout_gravity="bottom">   
+    
+   		<TextView
+        	android:id="@+id/track_label"
+       		android:layout_gravity="center_horizontal"
+       		android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"        
+        	android:textAppearance="?android:attr/textAppearanceMedium"
+       	/>  
+        
+    	<TextView
+        	android:id="@+id/track_label_descr"
             android:layout_marginLeft="75dp"
             android:layout_marginRight="75dp"
-       		android:layout_above="@id/music_progressbar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:singleLine="true" 
       		android:ellipsize="marquee"
        		android:marqueeRepeatLimit ="marquee_forever"
        		android:focusable="true"
        		android:focusableInTouchMode="true" 
         	android:scrollHorizontally="true"
-            android:gravity="center"
+            android:gravity="center_horizontal"
             android:textColor="#eeeeee"
-            android:textStyle="bold"/>
+            android:textStyle="bold"
+            android:textSize="14sp" />
     
-    <TextView
-        android:id="@+id/track_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/track_label_descr"
-        android:layout_centerHorizontal="true"
-        android:text="Large Text"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
- 
+    	<FrameLayout
+       		android:id="@+id/progress_layout"
+       		android:layout_width="match_parent"
+        	android:layout_height="wrap_content"
+       		android:layout_marginBottom="16dp">
+    <!-- Progress Bar/Seek bar -->
+   			<SeekBar
+           		android:id="@+id/music_progressbar"
+            	android:layout_gravity="bottom"
+            	android:layout_width="match_parent"
+            	android:layout_height="67dp"
+            	android:minHeight="67dp"
+            	android:maxHeight="67dp"
+             	android:thumb="@drawable/seekbar_thumb"
+             	android:thumbOffset="10dp"
+			/>
+    		<RelativeLayout
+       			 android:id="@+id/timer_layout"
+       			 android:layout_width="match_parent"
+        		 android:layout_height="wrap_content"
+        		 android:layout_gravity="bottom">
+        		 
+ 				<TextView
+          			android:id="@+id/total_duration"
+            		android:layout_width="wrap_content"
+            		android:layout_height="wrap_content"
+            		android:layout_marginBottom="16dp"
+            		android:layout_marginRight="25dp"
+            		android:layout_alignParentRight="true"
+            		android:textColor="#eeeeee"
+            		android:textStyle="bold"/>
+ 	
+    			<TextView
+            		android:id="@+id/current_duration"
+            		android:layout_width="wrap_content"
+            		android:layout_height="wrap_content"
+            		android:layout_marginBottom="16dp"
+            		android:layout_marginLeft="25dp"
+            		android:layout_alignParentLeft="true"
+            		android:textColor="#eeeeee"
+            		android:textStyle="bold"/>
+    
     <!-- Repeat / Shuffle buttons 
     <LinearLayout
         android:layout_width="fill_parent"
@@ -142,8 +110,39 @@
             android:background="@null"/>
     </LinearLayout>
  -->
-
-    
-
-	</RelativeLayout>
+ 			</RelativeLayout>
+ 		</FrameLayout>
+ <!-- Player Buttons -->
+        <LinearLayout 
+            android:id="@+id/buttons"
+            
+            android:layout_width="match_parent"
+            android:layout_height="110dp"
+            android:orientation="horizontal"
+            android:layout_alignParentBottom="true"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:weightSum="9">
+            <ImageButton
+                android:id="@+id/btn_prev"
+                android:layout_width="0dp"
+        		android:layout_height="match_parent"
+                android:layout_weight="3"
+                android:src="@drawable/btn_prev"
+                android:background="@null"/>
+            <ImageButton
+                android:id="@+id/btn_play"
+                android:layout_width="0dp"
+        		android:layout_height="match_parent"
+                android:layout_weight="3"
+                android:background="@null"/>
+            <ImageButton
+                android:id="@+id/btn_next"
+                android:layout_width="0dp"
+        		android:layout_height="match_parent"
+                android:layout_weight="3"
+                android:src="@drawable/btn_next"
+                android:background="@null"/>
+        </LinearLayout>
+	</LinearLayout>
 </FrameLayout>

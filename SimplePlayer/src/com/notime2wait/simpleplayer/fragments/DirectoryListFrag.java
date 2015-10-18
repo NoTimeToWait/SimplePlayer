@@ -6,7 +6,7 @@ import com.notime2wait.simpleplayer.MainActivity;
 import com.notime2wait.simpleplayer.MusicData;
 import com.notime2wait.simpleplayer.R;
 import com.notime2wait.simpleplayer.SwipeDismissListViewTouchListener;
-import com.notime2wait.simpleplayer.MusicData.Track;
+import com.notime2wait.simpleplayer.Track;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.*;
@@ -66,6 +66,7 @@ public class DirectoryListFrag extends BackHandledListFragment{
 	    setListAdapter(folderlistAdapter);
 	    setListShownNoAnimation(true);
 	    ListView listView = this.getListView();
+	    listView.setDivider(null);
 		SwipeDismissListViewTouchListener touchListener =
                 new SwipeDismissListViewTouchListener(
                         listView,
@@ -140,7 +141,7 @@ public class DirectoryListFrag extends BackHandledListFragment{
 			    TextView folderName = (TextView)folder_view.findViewById(R.id.title);
 	    		TextView folderPath = (TextView)folder_view.findViewById(R.id.folderPath);
 	    		folderName.setText(name);
-	    		folderPath.setText(folder_item);
+	    		folderPath.setText(folder_item.replaceFirst("(/storage/)?(.*)(/.*)", "$2"));
 
 			    return folder_view;
 			  }
@@ -250,10 +251,11 @@ public class DirectoryListFrag extends BackHandledListFragment{
 
 
   	@Override
-	  public void onDestroyView() {
+	public void onDestroyView() {
   		super.onDestroyView();
-		  setListAdapter(null);
-		  isFolderView = true;
-	  }
+		setListAdapter(null);
+		isFolderView = true;
+		MainActivity.handleUndoAction(null); //hide any popups produced by this fragment
+	}
 }
 

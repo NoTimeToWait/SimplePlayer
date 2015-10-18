@@ -5,7 +5,7 @@ import com.notime2wait.simpleplayer.MusicData;
 import com.notime2wait.simpleplayer.PlaylistDbHelper;
 import com.notime2wait.simpleplayer.R;
 import com.notime2wait.simpleplayer.SwipeDismissListViewTouchListener;
-import com.notime2wait.simpleplayer.MusicData.Track;
+import com.notime2wait.simpleplayer.Track;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -56,6 +56,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 	    setListAdapter(playlistAdapter);
 	    setListShownNoAnimation(true);
 	    ListView listView = this.getListView();
+	    listView.setDivider(null);
 		SwipeDismissListViewTouchListener touchListener =
                 new SwipeDismissListViewTouchListener(
                         listView,
@@ -130,7 +131,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 		  Track[] tracks = new Track[cursor.getCount()];
 		  if (cursor.moveToFirst()) {
 				int i=0;
-				String music_data, trackname, album, artist;
+				String music_data, trackname, album, artist, albumArt;
 				
 				do {
 					music_data = cursor.getString(cursor.getColumnIndex(PlaylistDbHelper.TracklistEntry.COLUMN_PATH));
@@ -138,7 +139,8 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 					trackname = cursor.getString(cursor.getColumnIndex(PlaylistDbHelper.TracklistEntry.COLUMN_TITLE));
 					album = cursor.getString(cursor.getColumnIndex(PlaylistDbHelper.TracklistEntry.COLUMN_ALBUM));
 					artist = cursor.getString(cursor.getColumnIndex(PlaylistDbHelper.TracklistEntry.COLUMN_ARTIST));
-					tracks[i] = mMusicData.new Track(trackname, music_data, album, artist);
+					albumArt = cursor.getString(cursor.getColumnIndex(PlaylistDbHelper.TracklistEntry.COLUMN_ART));
+					tracks[i] = new Track(trackname, music_data, album, artist, albumArt);
 					i++;
 				} while (cursor.moveToNext());
 		}
@@ -205,12 +207,13 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 		}
 
 	  	@Override
-		  public void onDestroyView() {
+		public void onDestroyView() {
 	  		super.onDestroyView();
-			  setListAdapter(null);
-			  isPlaylistView = true;
-			  getLoaderManager().getLoader(this.getId()).forceLoad();
-		  }
+			setListAdapter(null);
+			isPlaylistView = true;
+			getLoaderManager().getLoader(this.getId()).forceLoad();
+			MainActivity.handleUndoAction(null); //hide any popups produced by this fragment
+		}
 
 	@Override
 	public String getTagText() {

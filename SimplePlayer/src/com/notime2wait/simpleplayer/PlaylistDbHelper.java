@@ -1,12 +1,13 @@
 package com.notime2wait.simpleplayer;
 
-import com.notime2wait.simpleplayer.MusicData.Track;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.Bitmap;
+import android.os.AsyncTask;
 import android.provider.BaseColumns;
 import android.util.Log;
 
@@ -16,7 +17,7 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "playlist_database.db";
     private static final String[] DEFAULT_PLAYLISTS = {"Favorites", "Recent"};
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
     public static final String PLAYLIST_TABLE_NAME = "playlist_table";
     public static final String TRACKLIST_TABLE_NAME = "tracklist_table";
 
@@ -34,6 +35,7 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
             + TracklistEntry.COLUMN_PATH + " TEXT NOT NULL," 
             + TracklistEntry.COLUMN_ALBUM + " TEXT,"
             + TracklistEntry.COLUMN_ARTIST + " TEXT,"
+            + TracklistEntry.COLUMN_ART + " TEXT,"
     		+ TracklistEntry.COLUMN_TRACKNUM + " INTEGER NOT NULL," 
     		+ TracklistEntry.COLUMN_PLAYLIST_NAME + " TEXT NOT NULL," 
             + " FOREIGN KEY ("+TracklistEntry.COLUMN_PLAYLIST_NAME+") REFERENCES " + PLAYLIST_TABLE_NAME + " (" + PlaylistEntry.COLUMN_TITLE + ") ON DELETE CASCADE ON UPDATE CASCADE);";
@@ -43,9 +45,16 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     
     //private static final String GET_PLAYLIST_ROWID = "SELECT " + BaseColumns._ID + " FROM " + PLAYLIST_TABLE_NAME 
     //   				+ " WHERE " + PlaylistEntry.COLUMN_TITLE + "=" + PLAYLIST_TITLE;
+    
+    private Context mContext;
 
     public PlaylistDbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        mContext = context;
+    }
+    
+    public Context getContext() {
+    	return mContext;
     }
 
     @Override
@@ -86,14 +95,23 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     						TracklistEntry.COLUMN_PATH,
     						TracklistEntry.COLUMN_ALBUM,
     						TracklistEntry.COLUMN_ARTIST,
+    						TracklistEntry.COLUMN_ART,
     			}; 
     	return db.query(TRACKLIST_TABLE_NAME, columns, TracklistEntry.COLUMN_PLAYLIST_NAME+"=?", new String[] {playlistName}, null, null, TracklistEntry.COLUMN_TRACKNUM);
     }
     
-    public boolean savePlaylist(SQLiteDatabase db, IPlaylist<Track> playlist) {
-    	if (entryExists(db, PLAYLIST_TABLE_NAME, PlaylistEntry.COLUMN_TITLE, playlist.getTitle())) 
-    			removePlaylist(db, playlist);
-    	addPlaylist(db, playlist);
+    public boolean savePlaylist( final IPlaylist<Track> playlist) {
+    	AsyncTask<IPlaylist<Track>, Void, Void> savePlaylistTask = new AsyncTask<IPlaylist<Track>, Void, Void>() {
+			@Override
+			protected Void doInBackground(IPlaylist<Track>... arg0) {
+				SQLiteDatabase db = getWritableDatabase();
+				if (entryExists(db, PLAYLIST_TABLE_NAME, PlaylistEntry.COLUMN_TITLE, playlist.getTitle())) 
+	    			removePlaylist(db, playlist);
+				addPlaylist(db, playlist);
+				return null;
+			}
+    	};
+    	savePlaylistTask.execute(playlist);
     	return true;
     }
     
@@ -104,7 +122,7 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     }
     
     //TODO:
-    public boolean addPlaylist(SQLiteDatabase db, IPlaylist<Track> playlist) {
+    private boolean addPlaylist(SQLiteDatabase db, IPlaylist<Track> playlist) {
     	ContentValues cv = new ContentValues();
     	cv.put(PlaylistEntry.COLUMN_TITLE, playlist.getTitle());
     	db.insert(PLAYLIST_TABLE_NAME, null, cv);
@@ -115,6 +133,7 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     		cv.put(TracklistEntry.COLUMN_PATH, track.getPath());
     		cv.put(TracklistEntry.COLUMN_ALBUM, track.getAlbum());
     		cv.put(TracklistEntry.COLUMN_ARTIST, track.getArtist());
+    		cv.put(TracklistEntry.COLUMN_ART, track.getAlbumArt(false));
     		cv.put(TracklistEntry.COLUMN_TRACKNUM, i);
     		cv.put(TracklistEntry.COLUMN_PLAYLIST_NAME, playlist.getTitle());
     		db.insert(TRACKLIST_TABLE_NAME, null, cv);
@@ -124,14 +143,14 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     
     
     
-    public boolean removePlaylist(SQLiteDatabase db, IPlaylist<Track> playlist) {
+    private boolean removePlaylist(SQLiteDatabase db, IPlaylist<Track> playlist) {
     	
     	return db.delete(PLAYLIST_TABLE_NAME, PlaylistEntry.COLUMN_TITLE + "=?", new String[] {playlist.getTitle()})>0;
     	
     }
     
     
-    public boolean addTrackToPlaylist(SQLiteDatabase db, IPlaylist<Track> playlist, Track track, int trackNum) {
+    private boolean addTrackToPlaylist(SQLiteDatabase db, IPlaylist<Track> playlist, Track track, int trackNum) {
     	db.execSQL("UPDATE " + TRACKLIST_TABLE_NAME + " SET " 
     			+ TracklistEntry.COLUMN_TRACKNUM + "=" + TracklistEntry.COLUMN_TRACKNUM + "-1" +
     			" WHERE " + TracklistEntry.COLUMN_TRACKNUM + ">=" + trackNum + " AND " + TracklistEntry.COLUMN_PLAYLIST_NAME +"=" + playlist.getTitle());
@@ -140,13 +159,14 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
 		cv.put(TracklistEntry.COLUMN_PATH, track.getPath());
 		cv.put(TracklistEntry.COLUMN_ALBUM, track.getAlbum());
 		cv.put(TracklistEntry.COLUMN_ARTIST, track.getArtist());
+		cv.put(TracklistEntry.COLUMN_ART, track.getAlbumArt(false));
 		cv.put(TracklistEntry.COLUMN_TRACKNUM, trackNum);
 		cv.put(TracklistEntry.COLUMN_PLAYLIST_NAME, playlist.getTitle());
 		db.insert(TRACKLIST_TABLE_NAME, null, cv);
     	return true;
     }
     
-    public boolean removeTrackFromPlaylist(SQLiteDatabase db, IPlaylist<Track> playlist, int trackNum) {
+    private boolean removeTrackFromPlaylist(SQLiteDatabase db, IPlaylist<Track> playlist, int trackNum) {
     	
     	Track track = playlist.getTrack(trackNum);
     	db.execSQL("UPDATE " + TRACKLIST_TABLE_NAME + " SET " 
@@ -156,7 +176,7 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     	return db.delete(PLAYLIST_TABLE_NAME, whereClause , new String[] {playlist.getTitle(), track.getTitle(), String.valueOf(trackNum)})>0;
     }
     
-    public boolean moveTrack(SQLiteDatabase db, IPlaylist<Track> playlist, int trackNumOld, int trackNumNew ) {
+    private boolean moveTrack(SQLiteDatabase db, IPlaylist<Track> playlist, int trackNumOld, int trackNumNew ) {
     	
     	Track track = playlist.getTrack(trackNumOld);
     	
@@ -184,6 +204,7 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
         public static final String COLUMN_PATH = "path";
         public static final String COLUMN_ALBUM = "album";
         public static final String COLUMN_ARTIST = "artist";
+        public static final String COLUMN_ART = "art";
         public static final String COLUMN_TRACKNUM = "track_num";
         public static final String COLUMN_PLAYLIST_NAME = "playlist_name";
     }

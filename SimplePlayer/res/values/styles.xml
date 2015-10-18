@@ -4,7 +4,7 @@
         Base application theme, dependent on API level. This theme is replaced
         by AppBaseTheme from res/values-vXX/styles.xml on newer devices.
     -->
-    <style name="Theme.SimplePlayer" parent="android:Theme.Holo.NoActionBar">
+    <style name="Theme.SimplePlayer" parent="android:Theme.Holo.NoActionBar.Fullscreen">
         <!--
             Theme customizations available in newer API levels can go in
             res/values-vXX/styles.xml, while customizations related to
@@ -18,8 +18,15 @@
     <!-- Application theme. -->
     <style name="Theme.SimplePlayer.Base" parent="Theme.SimplePlayer">
         <!-- All customizations that are NOT specific to a particular API-level can go here. -->
+        <item name="android:tabWidgetStyle">@style/SPTabWidget</item>
     </style>
     
+    <style name="SPTabWidget" parent="@android:style/Widget.Holo.TabWidget">
+    <item name="android:textAppearance">@style/SPTabWidgetText</item>
+	</style>
+	<style name="SPTabWidgetText">
+   		<item name="android:textSize">12sp</item>
+	</style>
     
     <style name="fade_animation">
         <item name="@android:windowEnterAnimation">@anim/popup_show</item>
@@ -28,7 +35,7 @@
 
     <style name="UndoBar">
         <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_gravity">bottom</item>
         <item name="android:layout_marginLeft">8dp</item>
         <item name="android:layout_marginRight">8dp</item>
@@ -36,9 +43,21 @@
         <item name="android:orientation">horizontal</item>
         <item name="android:background">@drawable/undobar</item>
         <item name="android:clickable">true</item>
-        <item name="android:showDividers">middle</item>
+        <!-- <item name="android:showDividers">middle</item> -->
         <item name="android:divider">@drawable/undobar_divider</item>
         <item name="android:dividerPadding">10dp</item>
+    </style>
+    
+    <style name="UndoBarDivider">
+        <item name="android:layout_weight">0</item>
+		<item name="android:layout_marginRight">8dp</item>
+		<item name="android:layout_marginLeft">8dp</item>
+		<item name="android:layout_marginTop">15dp</item>
+		<item name="android:layout_marginBottom">15dp</item>
+		<item name="android:layout_width">1dp</item>
+		<item name="android:layout_height">20dp</item>
+		<item name="android:layout_gravity">center_vertical</item>
+		<item name="android:background">@color/popup_separator</item>
     </style>
 
     <style name="UndoBarMessage">

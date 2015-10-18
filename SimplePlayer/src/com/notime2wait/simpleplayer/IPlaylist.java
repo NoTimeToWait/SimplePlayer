@@ -8,7 +8,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.widget.ArrayAdapter;
 
-import com.notime2wait.simpleplayer.MusicData.Track;
 
 /*
  * The only implementation of this interface must be in MusicData (or MusicService) class and nowhere else
@@ -20,6 +19,8 @@ public interface IPlaylist<T>  {
 	public String getTitle();
 	
 	public void setTitle(String playlistName);
+	
+	public boolean hasDefaultTitle();
 	
 	//IMPORTANT:This getters should be used only in playback calls
 	public T getTrack(int index);
@@ -38,13 +39,13 @@ public interface IPlaylist<T>  {
 	
 	public void move(int from, int to);
 	
-	public boolean add( int position, T item);
+	public boolean add( int position, T item, boolean generateUndoEvent);
 	
-	public boolean add(T track);
+	public boolean add(T track, boolean generateUndoEvent);
 	
-	public boolean add(T[] tracks);
+	//public boolean add(T[] tracks);
 	
-	public void setCurrentTrackIndex(int i);
+	public int setCurrentTrackIndex(int i);
 	
 	public T getCurrentTrack();
 	
@@ -52,7 +53,9 @@ public interface IPlaylist<T>  {
 	
 	public T[] getTracksArray();
 	
-	//IMPORTANT:this should be used only in ArrayAdapters. All direct interaction with playlist should be prohibited
+	public ArrayList<T> getTracks();
+	
+	//IMPORTANT:fragments should interact with playlist only via ArrayAdapters. All direct interaction with playlist should be prohibited
 	public ArrayAdapter<T> getPlayListAdapter(Activity activity, int resource);
 
 }

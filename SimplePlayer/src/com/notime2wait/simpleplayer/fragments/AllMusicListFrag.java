@@ -13,9 +13,9 @@ import com.notime2wait.simpleplayer.MainActivity;
 import com.notime2wait.simpleplayer.MusicData;
 import com.notime2wait.simpleplayer.R;
 import com.notime2wait.simpleplayer.StickyListAdapter;
-import com.notime2wait.simpleplayer.MusicData.Track;
 import com.notime2wait.simpleplayer.R.id;
 import com.notime2wait.simpleplayer.R.layout;
+import com.notime2wait.simpleplayer.Track;
 
 import se.emilsjolander.stickylistheaders.StickyListHeadersAdapter;
 import se.emilsjolander.stickylistheaders.StickyListHeadersListView;

@@ -121,6 +121,7 @@ public class CheapSoundFile {
 
     protected ProgressListener mProgressListener = null;
     protected File mInputFile = null;
+    protected String filepath = null;
 
     protected CheapSoundFile() {
     }
@@ -129,6 +130,20 @@ public class CheapSoundFile {
         throws java.io.FileNotFoundException,
                java.io.IOException {
         mInputFile = inputFile;
+        if (filepath == null) filepath = inputFile.getPath();
+        
+    }
+    
+
+    public void ReadFile(String path)
+            throws java.io.FileNotFoundException,
+                   java.io.IOException {
+            filepath = path;
+            ReadFile(new File(path));
+        }
+    
+    public String getFilepath() {
+    	return filepath;
     }
 
     public void setProgressListener(ProgressListener progressListener) {
@@ -137,6 +152,14 @@ public class CheapSoundFile {
 
     public int getNumFrames() {
         return 0;
+    }
+    
+    public int getLowerBound(float percent) {
+    	return 0;
+    }
+    
+    public int getUpperBound(float percent) {
+    	return 0;
     }
 
     public int getSamplesPerFrame() {

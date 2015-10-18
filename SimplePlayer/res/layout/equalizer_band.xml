@@ -14,22 +14,29 @@
    		android:layout_width="match_parent"
     	android:layout_height="wrap_content"
     	android:orientation="horizontal" >
-    
+    <!--  
         <TextView
        		android:id="@+id/minDb"
         	android:layout_width="wrap_content"
         	android:layout_height="wrap_content" />
-        
+      -->  
         <SeekBar
         	android:id="@+id/bandSeekBar"    
-        	android:layout_width="0px"
+        	android:layout_width="0dp"
         	android:layout_weight="1"
-        	android:layout_height="wrap_content"
+        	android:layout_height="40dp"
+        	android:layout_marginTop="10dp"
+        	android:progressDrawable="@drawable/equalizer_progress"
+        	android:thumb="@drawable/equalizer_thumb"
+        	android:thumbOffset="10dp"
+        	android:minHeight="30dp"
+        	android:maxHeight="30dp"
         />
+        <!--
         <TextView
         	android:id="@+id/maxDb"
         	android:layout_width="wrap_content"
-        	android:layout_height="wrap_content" />
+        	android:layout_height="wrap_content" />-->
         
 	</LinearLayout>
 

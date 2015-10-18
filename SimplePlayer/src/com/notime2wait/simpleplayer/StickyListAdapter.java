@@ -1,6 +1,5 @@
 package com.notime2wait.simpleplayer;
 
-import com.notime2wait.simpleplayer.MusicData.Track;
 
 import se.emilsjolander.stickylistheaders.StickyListHeadersAdapter;
 import android.content.Context;

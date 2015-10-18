@@ -345,6 +345,32 @@ public class SwipeDismissListViewTouchListener implements View.OnTouchListener {
         // all dismissed list item animations have completed. This triggers layout on each animation
         // frame; in the future we may want to do something smarter and more performant.
 
+    	dismissView.animate()
+        .translationX(0)
+        .alpha(1)
+        .setDuration(mAnimationTime)
+        .setListener(null);
+    	Collections.sort(mPendingDismisses);
+        mPendingDismisses.add(new PendingDismissData(dismissPosition, dismissView));
+        int[] dismissPositions = new int[mPendingDismisses.size()];
+        for (int i = mPendingDismisses.size() - 1; i >= 0; i--) {
+            dismissPositions[i] = mPendingDismisses.get(i).position;
+        }
+    	mCallbacks.onDismiss(mListView, dismissPositions);
+        
+        // Reset mDownPosition to avoid MotionEvent.ACTION_UP trying to start a dismiss 
+        // animation with a stale position
+        mDownPosition = ListView.INVALID_POSITION;
+        
+        long time = SystemClock.uptimeMillis();
+        MotionEvent cancelEvent = MotionEvent.obtain(time, time,
+                MotionEvent.ACTION_CANCEL, 0, 0, 0);
+        mListView.dispatchTouchEvent(cancelEvent);
+
+        mPendingDismisses.clear();
+
+    	/*
+    	
         final ViewGroup.LayoutParams lp = dismissView.getLayoutParams();
         final int originalHeight = dismissView.getHeight();
 
@@ -399,6 +425,6 @@ public class SwipeDismissListViewTouchListener implements View.OnTouchListener {
         });
 
         mPendingDismisses.add(new PendingDismissData(dismissPosition, dismissView));
-        animator.start();
+        animator.start();*/
     }
 }

@@ -16,6 +16,7 @@ import android.graphics.Point;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.PorterDuff.Mode;
 import android.graphics.RectF;
+import android.os.AsyncTask;
 import android.os.Environment;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -29,12 +30,13 @@ public class BgView extends View {
 	public static String LOG_TAG = BgView.class.getName();
 	
     private Bitmap image;
-    //private Bitmap bgImage;
+    private String lastPath; 
+    private Bitmap bgImage;
     private Bitmap albumImage;
     private Bitmap alphaMask;
     private CropParam mCropParam = CropParam.SCALE_CROP;
     private Point mDisplaySize = new Point();
-    private boolean default_background = false;
+    private boolean defaultBackground = false;
     private float DIP = this.getContext().getResources().getDisplayMetrics().density;
     
     private final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -51,14 +53,14 @@ public class BgView extends View {
     public BgView(Context context) { 
         super(context); 
         ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getSize(this.mDisplaySize);
-        if (default_background) setDefaultBackground();//simpleScaleOptionTest(1);
+        if (defaultBackground) setDefaultBackground();//simpleScaleOptionTest(1);
         init();
     } 
     
     public BgView(Context context, AttributeSet attrs) { 
         super(context, attrs); 
         ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getSize(this.mDisplaySize);
-        if (default_background) setDefaultBackground();//simpleScaleOptionTest(1);
+        if (defaultBackground) setDefaultBackground();//simpleScaleOptionTest(1);
         init();
     } 
     
@@ -67,6 +69,7 @@ public class BgView extends View {
      	ColorMatrixColorFilter filter = new ColorMatrixColorFilter(cm);
      	maskPaint.setColorFilter(filter);
      	maskPaint.setXfermode(new PorterDuffXfermode(Mode.DST_IN));
+     	alphaMask = BitmapFactory.decodeResource(getResources(), R.drawable.crystal_alpha_hdpi);
     }
 
     @Override
@@ -108,18 +111,11 @@ public class BgView extends View {
     }
     
     public void setAlbumImage(String path) {
-    	Bitmap albumArt = BitmapFactory.decodeFile(path);
-    	if (alphaMask==null)
-    		alphaMask = BitmapFactory.decodeResource(getResources(), R.drawable.crystal_alpha_hdpi);
-    	//fit to screen and crop
-    	albumArt = scaleCenterCrop(albumArt, mDisplaySize.x, mDisplaySize.y);
-    	if (albumArt!=null) {
-    		Canvas albumCanvas = new Canvas(albumArt);
-    		albumCanvas.drawBitmap(alphaMask, 0, 0, maskPaint);
-    	}
-    	albumImage = albumArt;
-    		
-    	
+    	if ((path==null&&lastPath==null)||(path!=null&&path.equals(lastPath))) return;
+    	lastPath = path;
+    	BackgroundViewTask bgTask = new BackgroundViewTask();
+    	bgTask.execute(path);
+    }
     	//Bitmap.createBitmap(albumArt, x, y, width, height);
     	/*
     	float scaleRatio = (float) mDisplaySize.y / albumArt.getHeight();
@@ -136,34 +132,45 @@ public class BgView extends View {
     	
     	//Canvas albumCanvas = new Canvas(albumArt);
         //albumCanvas.setBitmap(albumArt);
-    }
+    //}
     
-    public Bitmap scaleCenterCrop(Bitmap source, int newWidth, int newHeight) {
+    public Bitmap scaleCenterCrop(Bitmap source, int newWidth, int newHeight, boolean crop) {
     	if (source==null) return null;
         int sourceWidth = source.getWidth();
         int sourceHeight = source.getHeight();
 
         float xScale = (float) newWidth / sourceWidth;
         float yScale = (float) newHeight / sourceHeight;
-        float scale = Math.max(xScale, yScale);
+        float scale = crop? Math.max(xScale, yScale) : Math.min(xScale, yScale);
 
         float scaledWidth = scale * sourceWidth;
         float scaledHeight = scale * sourceHeight;
 
         float left = (newWidth - scaledWidth) / 2;
-        float top = (newHeight - scaledHeight) / 2;
+        float top = crop? (newHeight - scaledHeight) / 2 : 60;
 
         RectF targetRect = new RectF(left, top, left + scaledWidth, top + scaledHeight);
-
-        Bitmap dest = Bitmap.createBitmap(newWidth, newHeight, source.getConfig());
+        
+        Bitmap.Config bmpCfg = source.getConfig();
+        if(bmpCfg == null) 
+            bmpCfg = Bitmap.Config.ARGB_8888;
+        
+        Bitmap dest = Bitmap.createBitmap(newWidth, newHeight, bmpCfg);
         Canvas canvas = new Canvas(dest);
         canvas.drawBitmap(source, null, targetRect, null);
 
         return dest;
     }
     
-    public void setImage(Resources res, int resId,
+    
+    //for default bgImage
+    private void setImage(Resources res, int resId,
             int reqWidth, int reqHeight) {
+    	lastPath = null;
+    	if (bgImage!=null) {
+    		image = bgImage;
+    		return;
+    	}
     	// First decode with inJustDecodeBounds=true to check dimensions
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -212,19 +219,44 @@ public class BgView extends View {
         	if (startY<0) startY = 0;
         	image = Bitmap.createBitmap(image,  startX,  startY, reqWidth, reqHeight);
         }
-        
+        bgImage = image;
     
         
         if (MainActivity.DEBUG) Log.e(LOG_TAG, "Height"+image.getHeight()+"Width"+image.getWidth()+"Mutable"+image.isMutable());
     }
     
     public void setDefaultBackground(){
+    	if (defaultBackground) return;
     	setNoCrop();
     	Log.e(LOG_TAG, "mDisplaySize.x"+mDisplaySize.x+"mDisplaySize.y"+mDisplaySize.y);
 		//bgImageView.imageBitmap = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.simpleplayer_bg),960,1600,true);
     	//if (bgImage!=null) image = bgImage;
     	setImage(getResources(), R.drawable.simpleplayer_bg,mDisplaySize.x, mDisplaySize.y);
-    	
+    	defaultBackground = true;
+    }
+    
+    private class BackgroundViewTask extends AsyncTask<String, Void, Bitmap>{
+
+		@Override
+		protected Bitmap doInBackground(String... path) {
+			Bitmap albumArt = BitmapFactory.decodeFile(path[0]);
+	    	if (alphaMask==null)
+	    		alphaMask = BitmapFactory.decodeResource(getResources(), R.drawable.crystal_alpha_hdpi);
+	    	//fit to screen and crop
+	    	if (albumArt!=null) {
+	        	albumArt = scaleCenterCrop(albumArt, mDisplaySize.x, mDisplaySize.y, false);
+	    		Canvas albumCanvas = new Canvas(albumArt);
+	    		albumCanvas.drawBitmap(alphaMask, 0, 0, maskPaint);
+	    	}
+			return albumArt;
+		}
+		
+		@Override
+		protected void onPostExecute(Bitmap result) {
+	    	albumImage = result;
+			invalidate();
+	    }
+    
     }
     
     public enum CropParam {

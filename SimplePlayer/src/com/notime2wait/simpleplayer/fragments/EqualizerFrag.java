@@ -57,7 +57,7 @@ public class EqualizerFrag extends ListFragment{
     @Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 	    super.onActivityCreated(savedInstanceState);
-	    getListView().setDividerHeight(0);
+	    //getListView().setDividerHeight(30);
         getListView().setDivider(null);
         float SCALE = getActivity().getResources().getDisplayMetrics().density;
         getListView().setPadding((int) (16*SCALE), (int) (8*SCALE), (int) (16*SCALE), 0);
@@ -74,10 +74,10 @@ public class EqualizerFrag extends ListFragment{
 		mHeaderView = getActivity().getLayoutInflater().inflate(R.layout.equalizer_band, null);
 		TextView freqTextView = (TextView)mHeaderView.findViewById(R.id.bandFrequency);
 	    freqTextView.setText("Amplify");
-		TextView minDbTextView = (TextView)mHeaderView.findViewById(R.id.minDb);
+		/*TextView minDbTextView = (TextView)mHeaderView.findViewById(R.id.minDb);
         minDbTextView.setText((minEQLevel / 100) + " dB");
         TextView maxDbTextView = (TextView)mHeaderView.findViewById(R.id.maxDb);
-        maxDbTextView.setText((maxEQLevel / 100) + " dB");
+        maxDbTextView.setText((maxEQLevel / 100) + " dB");*/
         SeekBar bar = (SeekBar)mHeaderView.findViewById(R.id.bandSeekBar);
         bar.setMax((maxEQLevel-minEQLevel));
         bar.setProgress((maxEQLevel-minEQLevel)/2);
@@ -118,10 +118,10 @@ public class EqualizerFrag extends ListFragment{
 			    TextView freqTextView = (TextView)band_view.findViewById(R.id.bandFrequency);
 			    freqTextView.setText((mEqualizer.getCenterFreq(band) / 1000) + " Hz");
 			    
-			    TextView minDbTextView = (TextView)band_view.findViewById(R.id.minDb);
+			    /*TextView minDbTextView = (TextView)band_view.findViewById(R.id.minDb);
 	            minDbTextView.setText((minEQLevel / 100) + " dB");
 	            TextView maxDbTextView = (TextView)band_view.findViewById(R.id.maxDb);
-	            maxDbTextView.setText((maxEQLevel / 100) + " dB");
+	            maxDbTextView.setText((maxEQLevel / 100) + " dB");*/
 	            
 	            bands[band] = (SeekBar)band_view.findViewById(R.id.bandSeekBar);
 	            bands[band].setMax(maxEQLevel-minEQLevel);

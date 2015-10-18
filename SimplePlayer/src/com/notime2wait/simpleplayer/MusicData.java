@@ -20,6 +20,8 @@ import android.database.sqlite.SQLiteException;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.support.v4.content.CursorLoader;
 import android.util.Log;
@@ -28,13 +30,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 
 public class MusicData {
 	
 	private static String LOG_TAG = MusicData.class.getName();
 	
-	private MainActivity mMainActivity;
+	
+	private MusicService mMusicService;
 	
 	//private Uri musicSourceUri; 
 
@@ -64,22 +68,23 @@ public class MusicData {
 	private int HISTORY_LEN = 20;
 	private LinkedList<IPlaylist<Track>> mPlaylistHistory = new LinkedList<IPlaylist<Track>>();
 	private int mHistoryIndex = -1;
+	//flag to indicate whether we are going to create Undoables or not
+	private boolean mUndoEnabled = true;
 	//TODO: add current playlist int num
 	//private int mCurrentTrackIndex;
 	
-	public void init(MainActivity activity) {
-		mFolderTracks = new TreeMap<String, ArrayList<Track>>();
-		mMainActivity = activity;
-		getMusicList(false);
-		mPlaylistDbHelper = new PlaylistDbHelper(mMainActivity);
+	public void setUndoEnabled(boolean undoEnabled) {
+		mUndoEnabled = undoEnabled;
 	}
 	
-	public String getAlbumArt(Track track) {
-		/*Cursor cursor = mMainActivity.managedQuery(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI, 
-                new String[] {MediaStore.Audio.Albums.ALBUM, MediaStore.Audio.Albums.ALBUM_ART}, 
-                MediaStore.Audio.Albums.ALBUM+ "=?", 
-                new String[] {String.valueOf(track.getAlbum())}, 
-                null);*/
+	public void init(MusicService service) {
+		mFolderTracks = new TreeMap<String, ArrayList<Track>>();
+		mMusicService = service;
+		getMusicList(false);
+		mPlaylistDbHelper = new PlaylistDbHelper(mMusicService);
+	}
+	
+	public String getArt(Track track) {
 		//TODO add the album art path to track info in main MediaDB access
 		Cursor cursor;
 		Uri musicSourceUri =  MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI;
@@ -88,7 +93,7 @@ public class MusicData {
         String[] args = {String.valueOf(track.getAlbum())};
 		//String sort = MediaStore.Audio.Media.DEFAULT_SORT_ORDER;
 		
-		CursorLoader loader = new CursorLoader(mMainActivity, musicSourceUri, proj, select, args, MediaStore.Audio.Albums.DEFAULT_SORT_ORDER);
+		CursorLoader loader = new CursorLoader(mMusicService, musicSourceUri, proj, select, args, MediaStore.Audio.Albums.DEFAULT_SORT_ORDER);
 		cursor = loader.loadInBackground();
 		
 		
@@ -103,9 +108,13 @@ public class MusicData {
 	}
 	
 	public ListIterator<IPlaylist<Track>> getPlaylistHistory() {
-		if (MainActivity.DEBUG) Log.e("Iterator", "HistoryListLen="+mPlaylistHistory.size()+"HistoryIndex="+mHistoryIndex);
 		return  mPlaylistHistory.listIterator(mHistoryIndex<0? 0 : mHistoryIndex);
 		/*TODO: Add here current playlist if num is out of bounds*/
+	}
+	
+	public void addPlaylistToHistory(IPlaylist playlist) {
+		mPlaylistHistory.remove(playlist);
+		mPlaylistHistory.addLast(playlist);
 	}
 	
 	public int getHistoryIndex() {
@@ -125,10 +134,18 @@ public class MusicData {
 		mHistoryIndex = index;
 	}
 	
+	public int getHomeIndex() {
+		return mPlaylistHistory.lastIndexOf(mCurrentPlaylist);
+	}
+	
 	public boolean isHomePlaylist(){
 		if (mPlaylistHistory.isEmpty()) return true;
-		if (MainActivity.DEBUG) Log.e("1111111", "mHistoryIndex="+mHistoryIndex+" CurrentPlaylist="+mCurrentPlaylist.title);
 		return mCurrentPlaylist.equals(mPlaylistHistory.get(mHistoryIndex<0? 0:mHistoryIndex));
+	}
+	
+	public boolean isHomePlaylist(Playlist playlist) {
+		if (mPlaylistHistory.isEmpty()) return true;
+		return playlist.equals(mPlaylistHistory.get(mHistoryIndex<0? 0:mHistoryIndex));
 	}
 	
 	public Set<String> getFolders() {
@@ -147,11 +164,11 @@ public class MusicData {
 	}
 	/*
 	public String[] getPaths(String folderName)	{
-		if (MainActivity.DEBUG)
+		if (MusicService.DEBUG)
 			for (String str:mFolders) Log.d(LOG_TAG, "mFolders"+str);
-		if (MainActivity.DEBUG)
+		if (MusicService.DEBUG)
 			Log.d(LOG_TAG, "Folder Index="+Arrays.binarySearch(mFolders, folderName));
-		if (MainActivity.DEBUG)
+		if (MusicService.DEBUG)
 			Log.d(LOG_TAG, "Folde="+mFolders[Arrays.binarySearch(mFolders, folderName)]);
 		
 		return getTracks(Arrays.binarySearch(mFolders, folderName));
@@ -164,7 +181,7 @@ public class MusicData {
 		int offset = folderNum == 0    ?    0    :    mFolderTracks.get(folderNum);
 		int size = folderNum == mFolders.length-1    ?    mTracks.length    :    mFolderTracks.get(folderNum+1);
 		size-=offset;
-		if (MainActivity.DEBUG)
+		if (MusicService.DEBUG)
 			Log.e(LOG_TAG, "Size="+size+"Offset="+offset);
 		Track[] folder_tracks = new Track[size];
 		System.arraycopy(mTracks, offset, folder_tracks, 0, size);
@@ -191,12 +208,10 @@ public class MusicData {
 		Cursor cursor;
 		Uri musicSourceUri = !internal_storage&&this.isSdMounted()? MediaStore.Audio.Media.EXTERNAL_CONTENT_URI :  MediaStore.Audio.Media.INTERNAL_CONTENT_URI;
         String select = "("+MediaStore.Audio.Media.IS_MUSIC + " != 0) AND (" + MediaStore.Audio.Media.DATA +" != '')";
-		String[] proj = { MediaStore.Audio.Media.DATA, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ALBUM, MediaStore.Audio.Media.ARTIST };
+		String[] proj = { MediaStore.Audio.Media.DATA, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ALBUM, MediaStore.Audio.Media.ARTIST, };
 		//String sort = MediaStore.Audio.Media.DEFAULT_SORT_ORDER;
-		if (MainActivity.DEBUG)
-			Log.d(LOG_TAG, "Selected music uri:"+musicSourceUri);
 		
-		CursorLoader loader = new CursorLoader(mMainActivity, musicSourceUri, proj, select, null, MediaStore.Audio.Media.TITLE);
+		CursorLoader loader = new CursorLoader(mMusicService, musicSourceUri, proj, select, null, MediaStore.Audio.Media.TITLE);
 		cursor = loader.loadInBackground();
 		
 
@@ -213,8 +228,7 @@ public class MusicData {
 					trackname = cursor.getString(1);
 					album = cursor.getString(2);
 					artist = cursor.getString(3);
-					mTracks[i] = new Track(trackname, music_data, album, artist);
-					if (MainActivity.DEBUG) Log.d(LOG_TAG, music_data);
+					mTracks[i] = new Track(trackname, music_data, album, artist, "");
 					int slash_position = music_data.lastIndexOf('/');
 					if (slash_position<2) continue;
 					//trackname = music_data.substring(slash_position+1)+"+"+cursor.getString(1);
@@ -263,32 +277,34 @@ public class MusicData {
 		}*/
 		return  mPlaylistDbHelper;
 	}
-	
+	/*
 	public boolean isPlaying() {
-		return mMainActivity.isPlaying();
+		return mMusicService.isPlaying();
 	}
 	
 	public void stopMusic() {
-		mMainActivity.stopMusic();
-	}
+		mMusicService.stopMusic();
+	}*/
 	
 	/**
 	 * use only to add track and play it from AllMusicList
 	 */
 	
 	public boolean playTrack(int trackNum) {
+		if (mCurrentPlaylist!=null) mCurrentPlaylist.deselect();
 		mCurrentPlaylist = new Playlist();
-		mCurrentPlaylist.add(mTracks[trackNum]);
+		mCurrentPlaylist.add(mTracks[trackNum], false);
 		mCurrentPlaylist.setCurrentTrackIndex(0); //0 means that current track is the first track
-		mPlaylistHistory.addLast(mCurrentPlaylist);
+		//mPlaylistHistory.addLast(mCurrentPlaylist);
+		addPlaylistToHistory(mCurrentPlaylist);
 		mHistoryIndex = mPlaylistHistory.size()-1;
-		return mMainActivity.playTrack(mTracks[trackNum], getAlbumArt(mTracks[trackNum]));
+		return mMusicService.playTrack(mTracks[trackNum]);
 	}
 	/*
 	public boolean playTrack(Track track) {
 
 		//mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
-		return mMainActivity.playTrack(track);
+		return mMusicService.playTrack(track);
 	}*/
 	/**
 	 * to call from tracklist frag
@@ -297,10 +313,11 @@ public class MusicData {
 	 * @return
 	 */
 	public boolean playTrack(int trackPosition, IPlaylist playlist) {
+		if (mCurrentPlaylist!=null) mCurrentPlaylist.deselect();
 		Track track = (Track) playlist.getTrack(trackPosition);
 		mCurrentPlaylist = (Playlist) playlist;
 		mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
-		return mMainActivity.playTrack(track, getAlbumArt(track));
+		return mMusicService.playTrack(track);
 	}
 	
 	/**
@@ -311,28 +328,35 @@ public class MusicData {
 	 */
 	public boolean playTrack(String folder, int trackPosition, int totalTrackNum) {
 		//mCurrentTrackIndex = trackPos;
+		if (mCurrentPlaylist!=null) mCurrentPlaylist.deselect();
 		mCurrentPlaylist = new Playlist();
 		//Track[] folder_tracks = new Track[totalTrackNum];
 		//int track_offset = getOffset(folder);
 		//System.arraycopy(mTracks, track_offset, folder_tracks, 0, totalTrackNum);
 		Track[] folder_tracks = mFolderTracks.get(folder).toArray(new Track[0]);
-		mCurrentPlaylist.add(folder_tracks);
+		mCurrentPlaylist.add(folder_tracks, false);
 		mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
-		mPlaylistHistory.addLast(mCurrentPlaylist);
+		addPlaylistToHistory(mCurrentPlaylist);
 		mHistoryIndex = mPlaylistHistory.size()-1;
-		return mMainActivity.playTrack(folder_tracks[trackPosition], getAlbumArt(folder_tracks[trackPosition]));
+		return mMusicService.playTrack(folder_tracks[trackPosition]);
+	}
+	
+	public boolean prepareTracks(String playlist, int trackPosition, final Track[] tracks, boolean prepare) {
+		//mCurrentTrackIndex = trackPos;
+				if (mCurrentPlaylist!=null) mCurrentPlaylist.deselect();
+				mCurrentPlaylist = new Playlist();
+				//TODO check if there tracks array is consistent
+				mCurrentPlaylist.add(tracks, false);
+				mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
+				mCurrentPlaylist.setTitle(playlist);
+				addPlaylistToHistory(mCurrentPlaylist);
+				mHistoryIndex = mPlaylistHistory.size()-1;
+
+				return mMusicService.prepareTrack(tracks[trackPosition], prepare);
 	}
 	
 	public boolean playTracks(String playlist, int trackPosition, final Track[] tracks ) {
-		//mCurrentTrackIndex = trackPos;
-		mCurrentPlaylist = new Playlist();
-		//TODO check if there tracks array is consistent
-		mCurrentPlaylist.add(tracks);
-		mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
-		mCurrentPlaylist.setTitle(playlist);
-		mPlaylistHistory.addLast(mCurrentPlaylist);
-		mHistoryIndex = mPlaylistHistory.size()-1;
-		return mMainActivity.playTrack(tracks[trackPosition], getAlbumArt(tracks[trackPosition]));
+		return prepareTracks(playlist, trackPosition, tracks, false);//mMusicService.playTrack(tracks[trackPosition]);
 	}
 	/*
 	public void addTrackToPlaylist(int globalTrackNum) {
@@ -347,17 +371,16 @@ public class MusicData {
 		mCurrentPlaylist.add(track);
 	}
 	
-	
-	
 	public void addTracksToPlaylist(String folderName, int totalTrackNum) {
 		addTracksToPlaylist(folderName, totalTrackNum, mCurrentPlaylist);
 	}
-	
+	//TODO: !mCurrentPlaylist.add(tracks) check is under question, could possibly generate NPE,
+	//though we always have an empty playlist at hand, check the case when we aren't?
 	public void addTracksToPlaylist(Track[] tracks) {
 		if (!mCurrentPlaylist.add(tracks)) {
 			mCurrentPlaylist = new Playlist();
 			mCurrentPlaylist.add(tracks);
-			mPlaylistHistory.addLast(mCurrentPlaylist);
+			addPlaylistToHistory(mCurrentPlaylist);
 		}
 	}
 	
@@ -369,7 +392,7 @@ public class MusicData {
 		if (!playlist.add(folder_tracks)) {
 			mCurrentPlaylist = new Playlist();
 			mCurrentPlaylist.add(folder_tracks);
-			mPlaylistHistory.addLast(mCurrentPlaylist);
+			addPlaylistToHistory(mCurrentPlaylist);
 		}
 	}
 	/*
@@ -386,15 +409,17 @@ public class MusicData {
 	private class Playlist implements IPlaylist<Track> {
 		
 		//contains track paths
+		private final String DEFAULT_TITLE = "UntitledPlaylist";
 		private String title;
 		private final ArrayList<Track> playlist = new ArrayList<Track>();
+		private ViewGroup list; 
 		private ArrayAdapter<Track> mAdapter;
 		private int mCurrentTrackIndex = 0;
 		private UndoBarController mUndoPopupController;
 		private int mLastRemovedIndex;
 		
 		public Playlist() {
-			title = "UntitledPlaylist";
+			title = DEFAULT_TITLE;
 		}
 		
 		public Playlist(String playlistName) {
@@ -409,70 +434,138 @@ public class MusicData {
 			title = playlistName;
 		}
 		
+		public boolean hasDefaultTitle() {
+			return title.equals(DEFAULT_TITLE);
+		}
+		
+		//removes selection from current playing list view item
+		private void deselect() {
+			/*Log.e("DESELECT", "FROM LIST "+title+" track "+mCurrentTrackIndex+"List"+list+"mAdapter"+mAdapter);
+			if (mAdapter!=null&&list!=null) {
+				Log.e("DESELECT2", "2FROM LIST "+title+" track "+mCurrentTrackIndex);
+				mAdapter.getView(mCurrentTrackIndex, null, list, this);
+			}*/
+			setCurrentTrackIndex(-1);
+		}
+		
 		public Track remove(int position) {
+			//Log.e("REMOVE", "POS "+position+" CURRENT "+ mCurrentTrackIndex);
+			int currentPlayingTrack = mCurrentTrackIndex;
 			mLastRemovedIndex = position;
-			if (MainActivity.DEBUG) Log.e("Track remove0", " pos1 ="+position+"mCurrentTrackIndex:"+mCurrentTrackIndex);
 			MainActivity.handleUndoAction(new Undoable(){
 
 				private int pos = mLastRemovedIndex;
 				private Track item = getTrack(pos).clone();
 				@Override
 				public void undo() {
+					//we temporarily disable undo to prevent "add(pos, item)" operation from creating its own undo event
+					boolean oldUndoEnabled = mUndoEnabled;
+					mUndoEnabled = false;
 					add(pos, item);
+					mUndoEnabled = oldUndoEnabled;
 					//if (mAdapter!=null) mAdapter.notifyDataSetChanged();
 				}
 
 				@Override
 				public String getUndoMessage() {
-					return "Undo "+item.getTitle()+" remove";
+					return "Undo removal";
 				}
 				
 			});
 			
-			if (MainActivity.DEBUG) Log.e("Track remove1", " pos1 ="+position+"mCurrentTrackIndex:"+mCurrentTrackIndex);
 			if (((position==mCurrentTrackIndex && position==playlist.size()-1)||
 				(position < mCurrentTrackIndex))&&isHomePlaylist()) {
-					mCurrentTrackIndex--;
+					setCurrentTrackIndex(mCurrentTrackIndex-1);
 			}
-			if (MainActivity.DEBUG) Log.e("Track remove2", " pos1 ="+position+"mCurrentTrackIndex:"+mCurrentTrackIndex);
+			//Log.e("REMOVE", "POS "+position+" CURRENT "+ mCurrentTrackIndex);
 			Track item = playlist.remove(position);
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
+			
+			if (!isHomePlaylist()) return item;
+	    	if (mCurrentTrackIndex==-1) {
+	    		mMusicService.stopMusic();
+	    		return item;
+	    	}
+	    	if (position==currentPlayingTrack) {//(position==currentPlayingTrack&&mMusicData.isPlaying())
+	    		if (mMusicService.isPlaying())
+	    			playTrack(mCurrentTrackIndex, this);
+	    		else {
+	    			Track track = getTrack(mCurrentTrackIndex);
+	    			mCurrentPlaylist = this;
+	    			mCurrentPlaylist.setCurrentTrackIndex(mCurrentTrackIndex);
+	    			mMusicService.prepareTrack(track, true);
+	    		}
+	    	}
 			return item;
 		}
 		
 		public boolean add( int position, Track item) {
-			if (MainActivity.DEBUG) Log.e("Track remove:undo add0", " mCurrentTrackIndex ="+mCurrentTrackIndex);
+			return add(position, item, true);
+		}
+		
+		public boolean add( int position, Track item, boolean generateUndoEvent) {
 			if (isHomePlaylist()) {
-				if (position<=mCurrentTrackIndex) mCurrentTrackIndex++;
-				if (mCurrentTrackIndex<0) mCurrentTrackIndex=0;
+				if (position<=mCurrentTrackIndex) setCurrentTrackIndex(mCurrentTrackIndex+1);
+				if (mCurrentTrackIndex<0) setCurrentTrackIndex(0);
 			}
+			if (generateUndoEvent) MainActivity.handleUndoAction(getAddUndoHandler(position, 1));
 			playlist.add(position, item);
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
-			if (MainActivity.DEBUG) Log.e("Track remove:undo add1", " mCurrentTrackIndex ="+mCurrentTrackIndex);
 			return true;
 		}
 		
 		public boolean add(Track track) {
-			if (isHomePlaylist()&&mCurrentTrackIndex<0) mCurrentTrackIndex=0;
+			return add(track, true);
+		}
+		
+		public boolean add(Track track, boolean generateUndoEvent) {
+			if (isHomePlaylist()&&mCurrentTrackIndex<0) setCurrentTrackIndex(0);
+			if (generateUndoEvent) MainActivity.handleUndoAction(getAddUndoHandler(playlist.size(), 1));
 			playlist.add(track);
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
 			return true;
 		}
 		
 		public boolean add(Track[] tracks) {
-			if (mCurrentTrackIndex<0) mCurrentTrackIndex=0;
+			return add(tracks, true);
+		}
+		
+		public boolean add(Track[] tracks, boolean generateUndoEvent) {
+			if (mCurrentTrackIndex<0) setCurrentTrackIndex(0);
+			if (generateUndoEvent) MainActivity.handleUndoAction(getAddUndoHandler(playlist.size(), tracks.length));
 			Collections.addAll(playlist, tracks);
+			
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
 			return true;
+		}
+		
+		private Undoable getAddUndoHandler(final int position,final int length) {
+			return (!mUndoEnabled)? null : new Undoable(){
+
+				private int pos = position;
+				private int len = length;
+				@Override
+				public void undo() {
+					for (int i=0; i<len; i++) 
+						playlist.remove(pos).getTitle();
+						//Log.e("REMOVE", "Track "+playlist.remove(pos).getTitle()+" from playlist"+ getTitle());
+					if (mAdapter!=null) mAdapter.notifyDataSetChanged();
+				}
+				@Override
+				public String getUndoMessage() {
+					return String.valueOf(len)+ (len>1? " tracks" : " track") + " added to playlist";
+				}
+				
+			};
 		}
 		
 		@Override
 		public void move(int from, int to) {
 			if (from==to) return;
 			if (isHomePlaylist()) {
-				if (from<mCurrentTrackIndex && to>=mCurrentTrackIndex) mCurrentTrackIndex--;
-				else if (from == mCurrentTrackIndex) mCurrentTrackIndex = to;
-				else if (from>mCurrentTrackIndex && to<=mCurrentTrackIndex) mCurrentTrackIndex++;
+				if (from<mCurrentTrackIndex && to>=mCurrentTrackIndex) setCurrentTrackIndex(mCurrentTrackIndex-1);
+				else if (from == mCurrentTrackIndex) mCurrentTrackIndex = setCurrentTrackIndex(to);
+				else if (from>mCurrentTrackIndex && to<=mCurrentTrackIndex) setCurrentTrackIndex(mCurrentTrackIndex+1);
 			}
 			Track item = playlist.remove(from);
 			playlist.add(to, item);
@@ -491,25 +584,33 @@ public class MusicData {
 		}
 		
 		public Track getNext() {
-			return mCurrentTrackIndex<playlist.size()-1? playlist.get(++mCurrentTrackIndex) : null;
+			return mCurrentTrackIndex<playlist.size()-1? playlist.get(setCurrentTrackIndex(mCurrentTrackIndex+1)) : null;
 		}
 		
 		public Track getPrev() {
-			return mCurrentTrackIndex>0? playlist.get(--mCurrentTrackIndex) : null;
+			return mCurrentTrackIndex>0? playlist.get(setCurrentTrackIndex(mCurrentTrackIndex-1)) : null;
 		}
 		
 		public Track getFirst() {
-			return playlist.get(mCurrentTrackIndex=0);
+			return playlist.get(setCurrentTrackIndex(0));
 		}
 		
 		public Track getLast() {
-			return playlist.get(mCurrentTrackIndex=playlist.size()-1);
+			return playlist.get(setCurrentTrackIndex(playlist.size()-1));
 		}
 		
 		
 		
-		public void setCurrentTrackIndex(int i){
+		public int setCurrentTrackIndex(int i){
+			int oldIndex = mCurrentTrackIndex;
 			mCurrentTrackIndex = i;
+			if (mAdapter!=null && oldIndex!=i && list!=null) {
+				View converView = null;
+				if (oldIndex>-1 && oldIndex<playlist.size())mAdapter.getView(oldIndex, converView, list);
+				if (i>-1 && i<playlist.size()) mAdapter.getView(i, converView, list);
+				mAdapter.notifyDataSetChanged();
+			}
+			return i;
 		}
 				
 		public Track getCurrentTrack() {
@@ -520,6 +621,9 @@ public class MusicData {
 			return mCurrentTrackIndex;
 		}
 		
+		public ArrayList<Track> getTracks() {
+			return playlist;
+		}
 		
 		public Track[] getTracksArray() {
 			Track[] temp_track = new Track[playlist.size()];
@@ -535,19 +639,33 @@ public class MusicData {
 		public ArrayAdapter<Track> getPlayListAdapter(Activity activity, int resource) {
 			if (mAdapter==null) 
 				mAdapter = new ArrayAdapter<Track>(activity, resource, playlist) {
+					boolean parentChanged = false;
 		    			  @Override
 		    			  public View getView(int position, View convertView, ViewGroup parent) {
+		    				  if (!parentChanged) {
+		    					  list = parent;
+		    					  parentChanged = true;
+		    				  }
 		    				  View track_view = convertView;
 		    				  if (track_view == null) {
 		    					  LayoutInflater inflater = ((Activity) getContext()).getLayoutInflater();
 		    					  //LayoutInflater inflater = LayoutInflater.from(getContext());
 		    					  track_view = inflater.inflate(R.layout.playlist_item, parent, false);
 		    				  }
-			    		
+		    				  //if (getItem(position).getTitle().equals(mCurrentPlaylist.getCurrentTrack().getTitle())) track_view.setSelected(true);
+		    				  if (position == mCurrentTrackIndex/* && isHomePlaylist(Playlist.this)*/) track_view.setSelected(true);
+		    				  else track_view.setSelected(false);
+		    				  //if (position == mCurrentTrackIndex)  track_view.setSelected(true);
+		    				  //else track_view.setSelected(false);
 		    				  TextView trackName = (TextView)track_view.findViewById(R.id.trackName);
-		    				  trackName.setText(getItem(position).getTitle());
+		    				  String name = String.valueOf(position+1)+"."+getItem(position).getTitle().replaceFirst("(\\d{1,2})?(\\.)?(.*)", "$3");
+		    				  trackName.setText(name);
 		    				  
 		    				  return track_view;
+		    			  }
+		    			  
+		    			  public View getView(int position, View convertView, ViewGroup parent, Playlist playlist) {
+		    				  return getView(position, convertView, parent);
 		    			  }
 			  
 				}; 
@@ -557,46 +675,7 @@ public class MusicData {
 	}
 
 	
-	public class Track {
-
-		private String title;
-		private String path;
-		private String album;
-		private String artist;
-		/*
-		public Track(String title, String path) {
-			this.title = title;
-			this.path = path;
-		}*/
-		
-		public Track(String title, String path, String album, String artist) {
-			this.title = title;
-			this.path = path;
-			this.album = album;
-			this.artist = artist;
-		}
-		
-		public String getPath() {
-			return path;
-		}
-		
-		public String getTitle() {
-			return title;
-		}
-		
-		public String getAlbum() {
-			return album;
-		}
-		
-		public String getArtist() {
-			return artist;
-		}
-		
-		public Track clone() {
-			return new Track(title, path, album, artist);
-			
-		}
-	}
+	
 	
 	
 }
