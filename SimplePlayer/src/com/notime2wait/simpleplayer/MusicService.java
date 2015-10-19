@@ -20,6 +20,7 @@ import android.media.MediaPlayer;
 import android.media.MediaPlayer.*;
 import android.os.AsyncTask;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
@@ -45,6 +46,9 @@ public class MusicService extends Service {
 	public static String ACTION_PREV = "com.notime2wait.simpleplayer.previous_track";
 	public static String ACTION_PLAY = "com.notime2wait.simpleplayer.play_track";
 	public static String ACTION_PAUSE = "com.notime2wait.simpleplayer.pause_track";
+	
+	public static int SOURCE_MUSIC_PLAY = 2;
+	public static int SOURCE_TRACK_CHANGED = 4;
 
 	//TODO: have to check if there are any possible errors that will require creating a new instance of the MediaPlayer. Thus, removing "final"
 		// property will require checking SessionId and properly updating it wherever it is used.
@@ -52,11 +56,12 @@ public class MusicService extends Service {
     private RemoteViews mRemoteViews;
     private NotificationCompat.Builder mNotificationBuilder;
     private BroadcastReceiver mBroadcastReceiver;
+    private BroadcastReceiver mHeadsetStateReceiver;
     //private RemoteControlReceiver mRemoteControlReceiver;
     private boolean mAudioFocusGranted = false;
     private boolean wasPlayingOnFocusChange = false;
     
-    private final Set<TrackChangeObserver> observers = new HashSet<TrackChangeObserver>();
+    private final Set<MusicServiceObserver> observers = new HashSet<MusicServiceObserver>();
     
     private OnAudioFocusChangeListener audioFocusListener = new OnAudioFocusChangeListener() {
 	    public void onAudioFocusChange(int focusChange) {
@@ -101,19 +106,21 @@ public class MusicService extends Service {
 		return mBinder;
 	}
 	
-	public void registerObserver(TrackChangeObserver obs) {
+	public void registerObserver(MusicServiceObserver obs) {
 		observers.add(obs);
 	}
 	
-	public void unregisterObserver(TrackChangeObserver obs) {
-		observers.remove(obs);
+	public void unregisterObserver(MusicServiceObserver obs) {
+		if (obs==null) observers.clear();
+		else observers.remove(obs);
 	}
 	
-	private void notifyObservers(Track track, String albumImagePath) {
-		for (TrackChangeObserver obs: observers)
-			obs.update(track, albumImagePath, getDuration());
+	private void notifyObservers(Bundle extras, int source) {
+		if (isPlaying()) source|=SOURCE_MUSIC_PLAY;
+		for (MusicServiceObserver obs: observers)
+			obs.update(extras, source);
 	}
-	
+		
 	public boolean requestAudioFocus() {
 		if (!mAudioFocusGranted) {
 			AudioManager am = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
@@ -146,11 +153,16 @@ public class MusicService extends Service {
 	
 	public void stopMusic() {
 		mPlayer.stop();
+		if (mRemoteViews!=null) {
+			mRemoteViews.setImageViewResource(R.id.btn_ntf_play, R.drawable.btn_play_icn);
+			updateNotification();
+		}
 		//notifyObserversStop();
 	}
 	
 	public void start() {
 		mPlayer.start();
+		notifyObservers(null,0);
 		if (mRemoteViews!=null ) {
 			mRemoteViews.setImageViewResource(R.id.btn_ntf_play, R.drawable.btn_pause_icn);
 			updateNotification();
@@ -159,6 +171,7 @@ public class MusicService extends Service {
 	
 	public void pause() {
 		mPlayer.pause();
+		notifyObservers(null,0);
 		if (mRemoteViews!=null) {
 			mRemoteViews.setImageViewResource(R.id.btn_ntf_play, R.drawable.btn_play_icn);
 			updateNotification();
@@ -199,7 +212,10 @@ public class MusicService extends Service {
         } catch (IOException e) {
 			e.printStackTrace();
 		}
-		notifyObservers(track, track.getAlbumArt(true));
+		Bundle extras = new Bundle();
+		int source = SOURCE_TRACK_CHANGED;
+		extras.putParcelable("track", track);
+		notifyObservers(extras, source);
 		return true;
 	}
 	
@@ -252,8 +268,23 @@ public class MusicService extends Service {
 			}
 		  };
 		  //this.registerReceiver(mBroadcastReceiver, filter);
+
 		  LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, filter);
 	  }
+	  
+	  if (mHeadsetStateReceiver==null) {
+		  IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
+		  filter.addAction(ACTION_NEXT);
+		  mHeadsetStateReceiver = new BroadcastReceiver() {
+		  @Override
+			public void onReceive(Context context, Intent intent) {
+				if (intent.getIntExtra("state", 1)==0) pause();
+				
+			}
+		  };
+		  registerReceiver(mHeadsetStateReceiver, filter);
+	  }
+	  
 	   mMusicData.init(this);
        
 
@@ -332,6 +363,10 @@ public class MusicService extends Service {
 		isForeground = true;
 	}
 	
+	private void updateWidgets() {
+		//TODO:
+	}
+	
 	private void updateNotification() {
 		NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 		notificationManager.notify(1, mNotificationBuilder.build());
@@ -347,17 +382,23 @@ public class MusicService extends Service {
 		return isForeground;
 	}
 	
-	public interface TrackChangeObserver {
-		
-		public void update(Track track, String albumImagePath, int duration);
+	public interface MusicServiceObserver {
+		public void update(Bundle extras, int source);
 	}
+	
 	
 	@Override
     public void onDestroy() {
     	super.onDestroy();
-
+    	if (mHeadsetStateReceiver!=null) {
+    		unregisterReceiver(mHeadsetStateReceiver);
+    		mHeadsetStateReceiver = null;
+    	}
+    	if (mBroadcastReceiver!=null) {
+    		LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver);
+    		mBroadcastReceiver = null;
+    	}
 		if (mAudioFocusGranted) ((AudioManager) this.getSystemService(Context.AUDIO_SERVICE)).abandonAudioFocus(audioFocusListener);
-    	if (mBroadcastReceiver!=null) LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver);
 	}
 	
 	

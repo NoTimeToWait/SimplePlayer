@@ -8,7 +8,7 @@ import java.util.Observer;
 
 import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
 import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu.OnCloseListener;
-import com.notime2wait.simpleplayer.MusicService.TrackChangeObserver;
+import com.notime2wait.simpleplayer.MusicService.MusicServiceObserver;
 import com.notime2wait.simpleplayer.UndoBarController.Undoable;
 import com.notime2wait.simpleplayer.fragments.IBackHandledFragment;
 import com.notime2wait.simpleplayer.fragments.IBackHandledFragment.BackHandlerInterface;
@@ -113,12 +113,11 @@ public class MainActivity extends FragmentActivity
 		public void onServiceConnected(ComponentName name, IBinder binder) {
 			mMusicService = ((MusicService.ServiceBinder)binder).getService();
 			prepare();
-			mMusicService.registerObserver(new TrackChangeObserver() {
-
-				public void update(Track track, String albumImagePath, int duration) {
-					updateUIStart(track, albumImagePath, duration);
+			mMusicService.registerObserver(new MusicServiceObserver() {
+				public void update(Bundle extras, int source) {
+					if ((source&MusicService.SOURCE_TRACK_CHANGED)==MusicService.SOURCE_TRACK_CHANGED && extras.containsKey("track"))
+						updateUIStart((Track)extras.getParcelable("track"));
 				}
-		    	
 		    });
 		}
 
@@ -444,10 +443,10 @@ public class MainActivity extends FragmentActivity
    	 	mBtnPlay.setImageResource(R.drawable.btn_play_icn);
     }
     
-    public void  updateUIStart(Track track, String albumImagePath, int duration){
+    public void  updateUIStart(Track track){
         // Play song
         try {
-            mBackground.setAlbumImage(albumImagePath);
+            mBackground.setAlbumImage(track.getAlbumArt(true));
             mTitle.setText(track.getTitle());
             mTitleDescr.setText(track.getArtist()+" - "+track.getAlbum());
             
@@ -456,9 +455,9 @@ public class MainActivity extends FragmentActivity
  
             // set Progress bar values from 0 to track_length_in_seconds
             mProgressBar.setProgress(0);
-            mProgressBar.setMax(duration/1000);
+            mProgressBar.setMax(mMusicService.getDuration()/1000);
             if (mMusicService.isPlaying()) mBtnPlay.setImageResource(R.drawable.btn_pause_icn);
-            songTotalDurationLabel.setText(milliSecondsToTimer(duration));
+            songTotalDurationLabel.setText(milliSecondsToTimer(mMusicService.getDuration()));
     		songCurrentDurationLabel.setText(milliSecondsToTimer(0));
             //mProgressBar.setBackground(mVisuals.)
             // Updating progress bar
@@ -574,6 +573,13 @@ public class MainActivity extends FragmentActivity
         final ImageButton mBtn = (ImageButton) findViewById(R.id.btn_play);
         mBtn.setBackgroundResource(R.drawable.btn_play);
         mBtn.setImageResource((mMusicService==null||!mMusicService.isPlaying())? R.drawable.btn_play_icn : R.drawable.btn_pause_icn);
+        
+        mMusicService.registerObserver(new MusicServiceObserver() {
+			public void update(Bundle extras, int source) {
+				mBtn.setImageResource((source&MusicService.SOURCE_MUSIC_PLAY)==0?  R.drawable.btn_play_icn : R.drawable.btn_pause_icn);
+			}
+	    });
+        
         mBtn.setOnClickListener(new View.OnClickListener() {
  
             @Override
@@ -581,7 +587,6 @@ public class MainActivity extends FragmentActivity
                 if(getMusicData().getCurrentPlaylist().getPlaylistSize()==0) return; 
                 if (!mMusicService.requestAudioFocus()) return;
                 
-                mBtn.setImageResource(mMusicService.isPlaying()? R.drawable.btn_play_icn : R.drawable.btn_pause_icn);
                 //DO NOT DELETE
                 //mBtn.setImageResource("pause".equals(mBtn.getContentDescription())? R.drawable.btn_play_icn : R.drawable.btn_pause_icn);
                 //mBtn.setContentDescription("pause".equals(mBtn.getContentDescription())? "play" : "pause");
@@ -665,6 +670,14 @@ public class MainActivity extends FragmentActivity
 	  }
 
 	*/
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mMusicService!=null)
+        	mHandler.postDelayed(updateProgressBarTask, PROGRESS_UPDATE_TIME);
+    }
+    
     @Override
     protected void onPause() {
         super.onPause();
@@ -701,14 +714,12 @@ public class MainActivity extends FragmentActivity
         }
     }
     
+    
     @Override
-    protected void onResume() {
-        super.onResume();
-        if (mMusicService!=null)
-        	mHandler.postDelayed(updateProgressBarTask, PROGRESS_UPDATE_TIME);
+    protected void onStop() {
+        super.onStop(); 
+        mMusicService.unregisterObserver(null);
     }
-    
-    
     
     @Override
     public void onDestroy() {
