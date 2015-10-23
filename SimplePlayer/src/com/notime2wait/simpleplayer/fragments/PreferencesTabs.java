@@ -1,6 +1,7 @@
 package com.notime2wait.simpleplayer.fragments;
 
 
+import com.notime2wait.simpleplayer.MainActivity;
 import com.notime2wait.simpleplayer.R;
 import com.notime2wait.simpleplayer.R.id;
 
@@ -36,6 +37,7 @@ public class PreferencesTabs extends Fragment{
         /*mTabHost.addTab(mTabHost.newTabSpec("waveform").setIndicator("Wave"),
                 TempWaveformFrag.class, null);
         */
+        MainActivity.setPreferencesTabHost(mTabHost);
         return mTabHost;
     }
 	

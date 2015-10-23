@@ -40,6 +40,7 @@ import android.os.IBinder;
 import android.os.Parcel;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentTabHost;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
@@ -50,6 +51,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
@@ -85,11 +87,10 @@ public class MainActivity extends FragmentActivity
     private WaveformUtils mVisuals;
     private Rect mWaveformBounds;
     
-	private ImageButton mBtnPlay;
-    private ImageButton mBtnNext;
-    private ImageButton mBtnPrev;
-    private ImageButton mBtnRepeat;
-    private ImageButton mBtnShuffle;
+	//private ImageButton mBtnPlay;
+    //private ImageButton mBtnNext;
+    //private ImageButton mBtnPrev;
+    //private ButtonWheelView mBtnWheel;
     private SeekBar mProgressBar;
     private TextView mTitle;
     private TextView mTitleDescr;
@@ -100,12 +101,9 @@ public class MainActivity extends FragmentActivity
     private Handler mHandler = new Handler();
     // fragment to propagate events, e.g. back button pressed
     private IBackHandledFragment mFragment;
-    //private int currentTrackIndex = 0;
-    private boolean isShuffle = false;
-    private boolean isRepeat = false;
-    
-    //private Bundle mState; 
 	
+    protected static FragmentTabHost mPreferencesTabs;
+    protected static FragmentTabHost mTracklistTabs;
     
 	private static MusicService mMusicService;
 	private ServiceConnection mMusicServiceCon = new ServiceConnection(){
@@ -132,6 +130,14 @@ public class MainActivity extends FragmentActivity
 	
 	public static int getSessionId() {
 		return mMusicService.getSessionId();
+	}
+	
+	public static void setPreferencesTabHost(FragmentTabHost tabHost) {
+		mPreferencesTabs = tabHost;
+	}
+	
+	public static void setTracklistTabHost(FragmentTabHost tabHost) {
+		mTracklistTabs = tabHost;
 	}
 	
 	/*protected void onSaveInstanceState(Bundle state) {
@@ -190,7 +196,13 @@ public class MainActivity extends FragmentActivity
         });
         
         mBackground = (BgView) findViewById(R.id.background);
-
+        ButtonWheelView mBtnWheel = (ButtonWheelView) findViewById(R.id.button_wheel);
+        mBtnWheel.addHeaderView(getWheelButton(0, mBtnWheel));
+        for (int i=1; i<6; i++) 
+	    	 mBtnWheel.addView(getWheelButton(i, mBtnWheel), i);
+	    	
+        ViewGroup.LayoutParams lp = mBtnWheel.getLayoutParams();
+        mBtnWheel.layout(mBtnWheel.getLeft(), mBtnWheel.getTop(), mBtnWheel.getRight(), mBtnWheel.getBottom());
         mProgressBar = (SeekBar) findViewById(R.id.music_progressbar);
         mTitle = (TextView) findViewById(R.id.track_label);
         mTitleDescr = (TextView) findViewById(R.id.track_label_descr);
@@ -199,9 +211,9 @@ public class MainActivity extends FragmentActivity
         songTotalDurationLabel = (TextView) findViewById(R.id.total_duration);
         mUndoBarController =  new UndoBarController(findViewById(R.id.undobar));
         
-        mBtnPlay = getButtonPlay();
-        mBtnPrev = getButtonPrev();
-        mBtnNext = getButtonNext();
+        ImageButton btnPlay = getButtonPlay();
+        ImageButton btnPrev = getButtonPrev();
+        ImageButton btnNext = getButtonNext();
         mBackground.setDefaultBackground();
     	mProgressBar.setProgressDrawable(null);
     	mProgressBar.setOnSeekBarChangeListener(this); // Important
@@ -284,7 +296,8 @@ public class MainActivity extends FragmentActivity
     		int tracknum = p.readInt();
     		Track[] tracks = p.createTypedArray(Track.CREATOR);
     		    		
-    		if (getMusicData().getCurrentPlaylist().getPlaylistSize()==0) {
+    		if (getMusicData().getCurrentPlaylist().getPlaylistSize()==0 
+    				|| getMusicData().getCurrentPlaylist().getTitle().equals(getMusicData().getFavoritesTitle()) ) {
     			if (tracks==null || tracks.length==0) return;
     			getMusicData().prepareTracks(playlistTitle, tracknum, tracks, true);
     			mMusicService.seekTo(playerPosition);
@@ -440,7 +453,7 @@ public class MainActivity extends FragmentActivity
     
     public void updateUIStop() {
     	//TODO: add here bg image, waveform and song title removal 
-   	 	mBtnPlay.setImageResource(R.drawable.btn_play_icn);
+   	 	//mBtnPlay.setImageResource(R.drawable.btn_play_icn);
     }
     
     public void  updateUIStart(Track track){
@@ -456,7 +469,7 @@ public class MainActivity extends FragmentActivity
             // set Progress bar values from 0 to track_length_in_seconds
             mProgressBar.setProgress(0);
             mProgressBar.setMax(mMusicService.getDuration()/1000);
-            if (mMusicService.isPlaying()) mBtnPlay.setImageResource(R.drawable.btn_pause_icn);
+            //if (mMusicService.isPlaying()) mBtnPlay.setImageResource(R.drawable.btn_pause_icn);
             songTotalDurationLabel.setText(milliSecondsToTimer(mMusicService.getDuration()));
     		songCurrentDurationLabel.setText(milliSecondsToTimer(0));
             //mProgressBar.setBackground(mVisuals.)
@@ -534,6 +547,49 @@ public class MainActivity extends FragmentActivity
 		return mPlayer.isPlaying();
 	}*/
     
+	private View getWheelButton(int index, ViewGroup btnWheel) {
+		LayoutInflater inflater = getLayoutInflater();
+    	View view = inflater.inflate(R.layout.wheel_item, btnWheel, false);
+    	view.setVisibility(View.VISIBLE);
+    	switch (index) {
+    		case 5:
+    			((ImageView)view.findViewById(R.id.inner_icon)).setImageResource(R.drawable.fav_icon_small);
+    			view.setOnClickListener(new OnClickListener() {
+    				@Override
+    				public void onClick(View v) {
+    	    			getMusicData().fromToFavorites();
+    	    		}
+    	    	});
+    			break;
+    		case 4:
+    			((ImageView)view.findViewById(R.id.inner_icon)).setImageResource(R.drawable.pref_icon_small);
+    			view.setOnClickListener(new OnClickListener() {
+    				@Override
+    				public void onClick(View v) {
+    					mPreferencesTabs.setCurrentTabByTag("preferences");
+    					slidingMenu.showSecondaryMenu();
+    				}
+    	    	});
+    			break;
+    		case 3:
+    			((ImageView)view.findViewById(R.id.inner_icon)).setImageResource(R.drawable.play_icon_small);
+    			view.setOnClickListener(new OnClickListener() {
+    				@Override
+    				public void onClick(View v) {
+    					slidingMenu.showMenu();
+    				}
+    			});
+    		break;
+    		case 1:
+    			((ImageView)view.findViewById(R.id.inner_icon)).setImageResource(R.drawable.repeat_icon_small);
+    		break;
+    		case 0:
+    			((ImageView)view.findViewById(R.id.inner_icon)).setImageResource(R.drawable.open_icon_small);
+    		break;
+    	}
+    	return view;
+	}
+	
     private ImageButton getButtonNext(){
 
         ImageButton mBtnNext = (ImageButton) findViewById(R.id.btn_next);
@@ -718,13 +774,12 @@ public class MainActivity extends FragmentActivity
     @Override
     protected void onStop() {
         super.onStop(); 
-        mMusicService.unregisterObserver(null);
+        if (isFinishing()) mMusicService.unregisterObserver(null);
     }
     
     @Override
     public void onDestroy() {
     	super.onDestroy();
-    	Log.e("", "Destroyed");
     	/*IPlaylist<Track> playlist = getMusicData().getCurrentPlaylist();
     	if (playlist!=null) {
 	  		  playlist.setTitle("RecentLast");

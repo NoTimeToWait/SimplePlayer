@@ -161,6 +161,7 @@ public class MusicService extends Service {
 	}
 	
 	public void start() {
+		//mPlayer.setVolume(0.8f, 0.9f);
 		mPlayer.start();
 		notifyObservers(null,0);
 		if (mRemoteViews!=null ) {

@@ -1,6 +1,8 @@
 package com.notime2wait.simpleplayer;
 
 
+import java.util.Arrays;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -16,7 +18,7 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
 	private static String LOG_TAG = PlaylistDbHelper.class.getName();
 
     private static final String DATABASE_NAME = "playlist_database.db";
-    private static final String[] DEFAULT_PLAYLISTS = {"Favorites", "Recent"};
+    private static final String[] DEFAULT_PLAYLISTS = {MainActivity.getMusicData().getFavoritesTitle(), MainActivity.getMusicData().getRecentTitle()};
     private static final int DATABASE_VERSION = 3;
     public static final String PLAYLIST_TABLE_NAME = "playlist_table";
     public static final String TRACKLIST_TABLE_NAME = "tracklist_table";
@@ -85,11 +87,16 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     	db.execSQL("PRAGMA foreign_keys = ON;"); 
     }
     
-    public Cursor getPlaylists(SQLiteDatabase db) {
-    	return db.query(PLAYLIST_TABLE_NAME, new String[] {BaseColumns._ID, PlaylistEntry.COLUMN_TITLE}, null, null, null, null, PlaylistEntry.COLUMN_TITLE);
+    public Cursor getPlaylists() {
+    	return getReadableDatabase().query(PLAYLIST_TABLE_NAME, new String[] {BaseColumns._ID, PlaylistEntry.COLUMN_TITLE}, null, null, null, null, PlaylistEntry.COLUMN_TITLE);
     }
     
-    public Cursor getTracklist(SQLiteDatabase db, String playlistName) {
+    public Cursor getTracklist(String playlistName) {
+    	return getTracklist(getReadableDatabase(), playlistName);
+    }
+    
+    private Cursor getTracklist(SQLiteDatabase db, String playlistName) {
+
     	String[] columns = {BaseColumns._ID,
     						TracklistEntry.COLUMN_TITLE, 
     						TracklistEntry.COLUMN_PATH,
@@ -115,6 +122,35 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     	return true;
     }
     
+    public boolean saveTrackToPlaylist(String playlistTitle, final Track track) {
+    	if (playlistTitle == null || playlistTitle.isEmpty() || track==null) return false;
+    	SQLiteDatabase db = getWritableDatabase();
+    	if (Arrays.asList(DEFAULT_PLAYLISTS).contains(playlistTitle)
+    			|| entryExists(db, PLAYLIST_TABLE_NAME, PlaylistEntry.COLUMN_TITLE, playlistTitle)) {
+    		Cursor cursor = getTracklist(db, playlistTitle);
+    		int size = cursor.getCount();
+    		saveTrackToPlaylist(db, playlistTitle, track, size);
+    		return true;
+    	}
+    	return false;
+		
+    }
+    
+    //save track to a database with minimum calls
+    //all integrity checks must be implemented in methods that call this method
+    private boolean saveTrackToPlaylist(SQLiteDatabase db, String playlistTitle, final Track track, int tracknum) {
+    	ContentValues cv = new ContentValues();
+    	cv.put(TracklistEntry.COLUMN_TITLE, track.getTitle());
+		cv.put(TracklistEntry.COLUMN_PATH, track.getPath());
+		cv.put(TracklistEntry.COLUMN_ALBUM, track.getAlbum());
+		cv.put(TracklistEntry.COLUMN_ARTIST, track.getArtist());
+		cv.put(TracklistEntry.COLUMN_ART, track.getAlbumArt(false));
+		cv.put(TracklistEntry.COLUMN_TRACKNUM, tracknum);
+		cv.put(TracklistEntry.COLUMN_PLAYLIST_NAME, playlistTitle);
+		db.insert(TRACKLIST_TABLE_NAME, null, cv);
+		return true;
+    }
+    
     public static boolean entryExists(SQLiteDatabase db, String table, String field, String fieldValue) {
         Cursor cursor = db.query(table, null, field+"=?", new String[] {fieldValue}, null, null, null);
             if(cursor.getCount() <= 0) return false;      
@@ -126,18 +162,8 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     	ContentValues cv = new ContentValues();
     	cv.put(PlaylistEntry.COLUMN_TITLE, playlist.getTitle());
     	db.insert(PLAYLIST_TABLE_NAME, null, cv);
-    	for (int i=0; i<playlist.getPlaylistSize(); i++) {
-    		Track track = playlist.getTrack(i);
-    		cv = new ContentValues();
-    		cv.put(TracklistEntry.COLUMN_TITLE, track.getTitle());
-    		cv.put(TracklistEntry.COLUMN_PATH, track.getPath());
-    		cv.put(TracklistEntry.COLUMN_ALBUM, track.getAlbum());
-    		cv.put(TracklistEntry.COLUMN_ARTIST, track.getArtist());
-    		cv.put(TracklistEntry.COLUMN_ART, track.getAlbumArt(false));
-    		cv.put(TracklistEntry.COLUMN_TRACKNUM, i);
-    		cv.put(TracklistEntry.COLUMN_PLAYLIST_NAME, playlist.getTitle());
-    		db.insert(TRACKLIST_TABLE_NAME, null, cv);
-    	}
+    	for (int i=0; i<playlist.getPlaylistSize(); i++)
+    		saveTrackToPlaylist(db, playlist.getTitle(), playlist.getTrack(i), i);
     	return true;
     }
     

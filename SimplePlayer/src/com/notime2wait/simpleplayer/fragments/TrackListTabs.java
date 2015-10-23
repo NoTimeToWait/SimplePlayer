@@ -1,5 +1,6 @@
 package com.notime2wait.simpleplayer.fragments;
 
+import com.notime2wait.simpleplayer.MainActivity;
 import com.notime2wait.simpleplayer.R;
 import com.notime2wait.simpleplayer.R.id;
 
@@ -7,6 +8,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTabHost;
 import android.support.v4.app.ListFragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,16 +30,16 @@ public class TrackListTabs extends Fragment{
        //TODO should i set 
         mTabHost.setup(getActivity(), getChildFragmentManager(), R.id.realtabcontent);
 
-        mTabHost.addTab(mTabHost.newTabSpec("TracklistTab").setIndicator("Now Playing"),
+        mTabHost.addTab(mTabHost.newTabSpec("tracklist").setIndicator("Now Playing"),
                 TrackListFrag.class, null);
-        mTabHost.addTab(mTabHost.newTabSpec("DirectoryTab").setIndicator("Folders"),
+        mTabHost.addTab(mTabHost.newTabSpec("directory").setIndicator("Folders"),
                 DirectoryListFrag.class, null);
-        mTabHost.addTab(mTabHost.newTabSpec("PlaylistTab").setIndicator("Playlists"),
+        mTabHost.addTab(mTabHost.newTabSpec("playlist").setIndicator("Playlists"),
                 PlaylistsFrag.class, null);
        // mTabHost.addTab(mTabHost.newTabSpec("AllMusicTab").setIndicator("All Music"),
        //         AllMusicListFrag.class, null);
-        mTabHost.setCurrentTabByTag("DirectoryTab");
-        
+        mTabHost.setCurrentTabByTag("directory");
+        MainActivity.setTracklistTabHost(mTabHost);
         return mTabHost;
     }
 	

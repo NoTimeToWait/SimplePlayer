@@ -82,6 +82,14 @@ public class MusicData {
 		mMusicService = service;
 		getMusicList(false);
 		mPlaylistDbHelper = new PlaylistDbHelper(mMusicService);
+		Track[] tracks = getTracks(mPlaylistDbHelper.getTracklist(getFavoritesTitle()));
+		Playlist playlist = new Playlist();
+		playlist.add(tracks, false);
+		playlist.setCurrentTrackIndex(-1);
+		playlist.setTitle(getFavoritesTitle());
+		mPlaylistHistory.addFirst(playlist);
+		
+		mHistoryIndex = mPlaylistHistory.size()-1;
 	}
 	
 	public String getArt(Track track) {
@@ -161,6 +169,26 @@ public class MusicData {
 		if (mFolderTracks.containsKey(folderName))
 			return mFolderTracks.get(folderName).toArray(new Track[0]);
 		return new Track[0];
+	}
+	
+	public Track[] getTracks(Cursor cursor) {
+		  Track[] tracks = new Track[cursor.getCount()];
+		  if (cursor.moveToFirst()) {
+				int i=0;
+				String music_data, trackname, album, artist, albumArt;
+				
+				do {
+					music_data = cursor.getString(cursor.getColumnIndex(PlaylistDbHelper.TracklistEntry.COLUMN_PATH));
+
+					trackname = cursor.getString(cursor.getColumnIndex(PlaylistDbHelper.TracklistEntry.COLUMN_TITLE));
+					album = cursor.getString(cursor.getColumnIndex(PlaylistDbHelper.TracklistEntry.COLUMN_ALBUM));
+					artist = cursor.getString(cursor.getColumnIndex(PlaylistDbHelper.TracklistEntry.COLUMN_ARTIST));
+					albumArt = cursor.getString(cursor.getColumnIndex(PlaylistDbHelper.TracklistEntry.COLUMN_ART));
+					tracks[i] = new Track(trackname, music_data, album, artist, albumArt);
+					i++;
+				} while (cursor.moveToNext());
+		}
+		return tracks;
 	}
 	/*
 	public String[] getPaths(String folderName)	{
@@ -405,6 +433,18 @@ public class MusicData {
 	    return Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
 	}
 	
+	public String getFavoritesTitle() {
+		return mMusicService.getResources().getString(R.string.favorites_playlist_title);
+	}
+	
+	public String getRecentTitle() {
+		return mMusicService.getResources().getString(R.string.recent_playlist_title);
+	}
+	
+	public boolean fromToFavorites() {
+		return getPlaylistDbHelper().saveTrackToPlaylist(getFavoritesTitle(), getCurrentTrack());
+	}
+	
 	
 	private class Playlist implements IPlaylist<Track> {
 		
@@ -484,6 +524,7 @@ public class MusicData {
 			if (!isHomePlaylist()) return item;
 	    	if (mCurrentTrackIndex==-1) {
 	    		mMusicService.stopMusic();
+	    		mMusicService.prepareTrack(new Track("", "", "", "", ""), true);
 	    		return item;
 	    	}
 	    	if (position==currentPlayingTrack) {//(position==currentPlayingTrack&&mMusicData.isPlaying())
@@ -629,6 +670,8 @@ public class MusicData {
 			Track[] temp_track = new Track[playlist.size()];
 			return playlist.toArray(temp_track);
 		}
+		
+		
 		
 		//IMPORTANT:this should be used only in ArrayAdapters. All direct interaction with playlist should be prohibited
 		/*public ArrayList<Track> getTracksList() {

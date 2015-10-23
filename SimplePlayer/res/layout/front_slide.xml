@@ -12,7 +12,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
     />	
-     
+    <com.notime2wait.simpleplayer.ButtonWheelView 
+        android:id="@+id/button_wheel"
+        android:layout_width="145dp"
+        android:layout_height="165dp"
+        android:layout_gravity="right"
+        android:layout_marginRight="32dp"
+    /> 
     
     <LinearLayout 
     	android:layout_width="match_parent"
