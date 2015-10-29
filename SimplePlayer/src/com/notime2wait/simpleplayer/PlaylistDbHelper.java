@@ -1,17 +1,17 @@
 package com.notime2wait.simpleplayer;
 
 
-import java.util.Arrays;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.provider.BaseColumns;
+import android.support.v4.content.Loader;
 import android.util.Log;
+
+import java.util.Arrays;
 
 public class PlaylistDbHelper extends SQLiteOpenHelper {
 	
@@ -49,6 +49,8 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     //   				+ " WHERE " + PlaylistEntry.COLUMN_TITLE + "=" + PLAYLIST_TITLE;
     
     private Context mContext;
+
+	private Loader mPlFragmentLoader;
 
     public PlaylistDbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -104,8 +106,12 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     						TracklistEntry.COLUMN_ARTIST,
     						TracklistEntry.COLUMN_ART,
     			}; 
-    	return db.query(TRACKLIST_TABLE_NAME, columns, TracklistEntry.COLUMN_PLAYLIST_NAME+"=?", new String[] {playlistName}, null, null, TracklistEntry.COLUMN_TRACKNUM);
+    	return db.query(TRACKLIST_TABLE_NAME, columns, TracklistEntry.COLUMN_PLAYLIST_NAME + "=?", new String[]{playlistName}, null, null, TracklistEntry.COLUMN_TRACKNUM);
     }
+
+	public void setLoader(Loader loader) {
+		mPlFragmentLoader = loader;
+	}
     
     public boolean savePlaylist( final IPlaylist<Track> playlist) {
     	AsyncTask<IPlaylist<Track>, Void, Void> savePlaylistTask = new AsyncTask<IPlaylist<Track>, Void, Void>() {
@@ -148,8 +154,18 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
 		cv.put(TracklistEntry.COLUMN_TRACKNUM, tracknum);
 		cv.put(TracklistEntry.COLUMN_PLAYLIST_NAME, playlistTitle);
 		db.insert(TRACKLIST_TABLE_NAME, null, cv);
+		if (mPlFragmentLoader!=null) mPlFragmentLoader.forceLoad();
 		return true;
     }
+
+	public boolean removeTrackFromPlaylist(IPlaylist<Track> playlist, int trackNum) {
+		if (playlist==null) return false;
+		SQLiteDatabase db = getWritableDatabase();
+		/*String whereClause = TracklistEntry.COLUMN_PLAYLIST_NAME + "=? AND " + TracklistEntry.COLUMN_PATH + "=?";
+		String[] whereAttr = new String[] {playlistTitle, track.getPath()};
+		return db.delete(TRACKLIST_TABLE_NAME, whereClause , whereAttr)>0;*/
+		return removeTrackFromPlaylist(db, playlist, trackNum);
+	}
     
     public static boolean entryExists(SQLiteDatabase db, String table, String field, String fieldValue) {
         Cursor cursor = db.query(table, null, field+"=?", new String[] {fieldValue}, null, null, null);
@@ -195,20 +211,26 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     private boolean removeTrackFromPlaylist(SQLiteDatabase db, IPlaylist<Track> playlist, int trackNum) {
     	
     	Track track = playlist.getTrack(trackNum);
-    	db.execSQL("UPDATE " + TRACKLIST_TABLE_NAME + " SET " 
-    			+ TracklistEntry.COLUMN_TRACKNUM + "=" + TracklistEntry.COLUMN_TRACKNUM + "-1" +
-    			" WHERE " + TracklistEntry.COLUMN_TRACKNUM + ">" + trackNum + " AND " + TracklistEntry.COLUMN_PLAYLIST_NAME +"=" + playlist.getTitle());
-    	String whereClause = TracklistEntry.COLUMN_PLAYLIST_NAME + "=? AND " + TracklistEntry.COLUMN_TITLE + "=? AND " + TracklistEntry.COLUMN_TRACKNUM  + "=?";
-    	return db.delete(PLAYLIST_TABLE_NAME, whereClause , new String[] {playlist.getTitle(), track.getTitle(), String.valueOf(trackNum)})>0;
+		String whereClause =  TracklistEntry.COLUMN_TRACKNUM + ">? AND " + TracklistEntry.COLUMN_PLAYLIST_NAME +"=?";
+    	db.execSQL("UPDATE " + TRACKLIST_TABLE_NAME
+				+ " SET " + TracklistEntry.COLUMN_TRACKNUM + "=" + TracklistEntry.COLUMN_TRACKNUM + "-1"
+				+ " WHERE " + whereClause
+    			, new String[] {String.valueOf(trackNum), playlist.getTitle()});
+
+    	whereClause = TracklistEntry.COLUMN_PLAYLIST_NAME + "=? AND " + TracklistEntry.COLUMN_TITLE + "=? AND " + TracklistEntry.COLUMN_TRACKNUM  + "=?";
+		int deleted = db.delete(TRACKLIST_TABLE_NAME, whereClause , new String[] {playlist.getTitle(), track.getTitle(), String.valueOf(trackNum)});
+		if (mPlFragmentLoader!=null) mPlFragmentLoader.forceLoad();
+		Log.e(LOG_TAG, "DELETED "+deleted);
+    	return deleted>0;
     }
     
     private boolean moveTrack(SQLiteDatabase db, IPlaylist<Track> playlist, int trackNumOld, int trackNumNew ) {
     	
     	Track track = playlist.getTrack(trackNumOld);
     	
-    	db.execSQL("UPDATE " + TRACKLIST_TABLE_NAME + " SET " 
-    			+ TracklistEntry.COLUMN_TRACKNUM + "=" + TracklistEntry.COLUMN_TRACKNUM + "-1" +
-    			" WHERE " + TracklistEntry.COLUMN_PLAYLIST_NAME +"=" + playlist.getTitle() + " AND " + TracklistEntry.COLUMN_TRACKNUM + " BETWEEN " + trackNumOld + " AND " + trackNumNew);
+    	db.execSQL("UPDATE " + TRACKLIST_TABLE_NAME
+				+ " SET " + TracklistEntry.COLUMN_TRACKNUM + "=" + TracklistEntry.COLUMN_TRACKNUM + "-1"
+				+ " WHERE " + TracklistEntry.COLUMN_PLAYLIST_NAME +"='" + playlist.getTitle() + "' AND " + TracklistEntry.COLUMN_TRACKNUM + " BETWEEN " + trackNumOld + " AND " + trackNumNew);
     	
     	ContentValues cv = new ContentValues();
     	cv.put(TracklistEntry.COLUMN_TRACKNUM, trackNumNew);
@@ -216,7 +238,8 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     	db.update(TRACKLIST_TABLE_NAME, cv, whereClause, new String[] {playlist.getTitle(), track.getTitle(), String.valueOf(trackNumOld-1)});
     	//whereClause = TracklistEntry.COLUMN_PLAYLIST_NAME + "=? AND " + TracklistEntry.COLUMN_TITLE + "=? AND " + TracklistEntry.COLUMN_TRACKNUM  + "=?";
     	//return db.delete(PLAYLIST_TABLE_NAME, whereClause , new String[] {playlist.getTitle(), track.getTitle(), String.valueOf(trackNum)})>0;
-    	return true;
+		if (mPlFragmentLoader!=null) mPlFragmentLoader.forceLoad();
+		return true;
     }
     
     public static abstract class PlaylistEntry implements BaseColumns {

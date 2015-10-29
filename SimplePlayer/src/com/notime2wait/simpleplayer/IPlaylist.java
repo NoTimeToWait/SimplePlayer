@@ -1,12 +1,10 @@
 package com.notime2wait.simpleplayer;
 
 
-import java.util.ArrayList;
-import java.util.Collections;
-
 import android.app.Activity;
-import android.content.Context;
 import android.widget.ArrayAdapter;
+
+import java.util.ArrayList;
 
 
 /*
@@ -34,6 +32,8 @@ public interface IPlaylist<T>  {
 	public T getFirst();
 	
 	public T getLast();
+
+	public T remove(int position, boolean generateUndoEvent);
 	
 	public T remove(int position);
 	

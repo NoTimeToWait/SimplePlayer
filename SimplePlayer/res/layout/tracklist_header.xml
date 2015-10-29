@@ -7,9 +7,10 @@
     <ImageButton
         android:id="@+id/btn_tracklist_prev"
 		android:layout_marginLeft="4dp"
-        android:layout_width="wrap_content"
+        android:layout_width="42dp"
         android:layout_height="32dp"
         android:layout_gravity="center_vertical"
+        android:src="@drawable/btn_left"
         android:text="Prev" >
         
     </ImageButton>
@@ -28,9 +29,10 @@
     
 	<ImageButton
 	    android:id="@+id/btn_tracklist_next"
-	    android:layout_width="wrap_content"
+	    android:layout_width="42dp"
 	    android:layout_height="32dp"
 	    android:layout_gravity="center_vertical"
+        android:src="@drawable/btn_right"
 	    android:text="Next" >
         
     </ImageButton>

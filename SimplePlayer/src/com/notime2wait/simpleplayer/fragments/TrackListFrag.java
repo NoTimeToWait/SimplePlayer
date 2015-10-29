@@ -1,15 +1,18 @@
 package com.notime2wait.simpleplayer.fragments;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import android.os.Bundle;
+import android.support.v4.app.ListFragment;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ListView;
 
 import com.mobeta.android.dslv.DragSortController;
 import com.mobeta.android.dslv.DragSortListView;
@@ -19,36 +22,9 @@ import com.notime2wait.simpleplayer.MusicData;
 import com.notime2wait.simpleplayer.PlaylistDbHelper;
 import com.notime2wait.simpleplayer.R;
 import com.notime2wait.simpleplayer.Track;
-import com.notime2wait.simpleplayer.R.id;
-import com.notime2wait.simpleplayer.R.layout;
 
-import se.emilsjolander.stickylistheaders.StickyListHeadersListView;
-
-import android.R.color;
-import android.app.Activity;
-import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.media.MediaPlayer;
-import android.net.Uri;
-import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.support.v4.app.ListFragment;
-import android.support.v4.content.CursorLoader;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.util.Log;
-import android.view.*;
-import android.view.View.OnClickListener;
-import android.view.View.OnFocusChangeListener;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.TextView;
+import java.util.ConcurrentModificationException;
+import java.util.ListIterator;
 
 
 public class TrackListFrag extends ListFragment{
@@ -271,7 +247,7 @@ public class TrackListFrag extends ListFragment{
         // Setting this scroll listener is required to ensure that during ListView scrolling,
         // we don't look for swipes.
         listView.setOnScrollListener(touchListener.makeScrollListener());*/
-	    
+
 	}
 	  
 	  public DragSortController getController(DragSortListView listView) {
@@ -285,7 +261,7 @@ public class TrackListFrag extends ListFragment{
 	        controller.setDragInitMode(DragSortController.ON_DRAG);
 	        controller.setRemoveMode(DragSortController.FLING_REMOVE);
 	        return controller;
-	    }  						
+	  }
 	  
 	  @Override
 	public void onListItemClick(ListView l, View v, int position, long id) {

@@ -1,37 +1,26 @@
 package com.notime2wait.simpleplayer;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.ListIterator;
-import java.util.Set;
-import java.util.TreeMap;
-
-import com.notime2wait.simpleplayer.UndoBarController.Undoable;
-import com.notime2wait.simpleplayer.visualization.WaveformUtils;
-
 import android.app.Activity;
-import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteException;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Environment;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.support.v4.content.CursorLoader;
 import android.util.Log;
-import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.ListView;
 import android.widget.TextView;
+
+import com.notime2wait.simpleplayer.UndoBarController.Undoable;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Set;
+import java.util.TreeMap;
 
 public class MusicData {
 	
@@ -66,7 +55,7 @@ public class MusicData {
 	private PlaylistDbHelper mPlaylistDbHelper;
 	
 	private int HISTORY_LEN = 20;
-	private LinkedList<IPlaylist<Track>> mPlaylistHistory = new LinkedList<IPlaylist<Track>>();
+	private List<IPlaylist<Track>> mPlaylistHistory;// = new ArrayList<IPlaylist<Track>>();
 	private int mHistoryIndex = -1;
 	//flag to indicate whether we are going to create Undoables or not
 	private boolean mUndoEnabled = true;
@@ -82,14 +71,7 @@ public class MusicData {
 		mMusicService = service;
 		getMusicList(false);
 		mPlaylistDbHelper = new PlaylistDbHelper(mMusicService);
-		Track[] tracks = getTracks(mPlaylistDbHelper.getTracklist(getFavoritesTitle()));
-		Playlist playlist = new Playlist();
-		playlist.add(tracks, false);
-		playlist.setCurrentTrackIndex(-1);
-		playlist.setTitle(getFavoritesTitle());
-		mPlaylistHistory.addFirst(playlist);
-		
-		mHistoryIndex = mPlaylistHistory.size()-1;
+		clearHistory();
 	}
 	
 	public String getArt(Track track) {
@@ -119,27 +101,64 @@ public class MusicData {
 		return  mPlaylistHistory.listIterator(mHistoryIndex<0? 0 : mHistoryIndex);
 		/*TODO: Add here current playlist if num is out of bounds*/
 	}
+
+    protected void clearHistory(){
+        mPlaylistHistory = new ArrayList<IPlaylist<Track>>();
+        if (mPlaylistDbHelper!=null) {
+            Track[] tracks = getTracks(mPlaylistDbHelper.getTracklist(getFavoritesTitle()));
+            Playlist playlist = new Playlist();
+            playlist.add(tracks, false);
+            playlist.setCurrentTrackIndex(-1);
+            playlist.setTitle(getFavoritesTitle());
+            mPlaylistHistory.add(playlist);
+            playlist.deselect();
+            mHistoryIndex = mPlaylistHistory.size() - 1;
+        }
+    }
 	
 	public void addPlaylistToHistory(IPlaylist playlist) {
-		mPlaylistHistory.remove(playlist);
-		mPlaylistHistory.addLast(playlist);
+
+        if (!playlist.hasDefaultTitle()) {
+            for (int i = 0; i < mPlaylistHistory.size(); i++) {
+                IPlaylist<Track> pl =  mPlaylistHistory.get(i);
+                if (pl.getTitle().equals(playlist.getTitle())) {
+                    mPlaylistHistory.remove(i);
+                    if (playlist.getTitle().equals(getFavoritesTitle())) {
+                        mPlaylistHistory.add(i, playlist);
+                        return;
+                    }
+                    break;
+                }
+
+            }
+        }
+        mPlaylistHistory.add(playlist);
 	}
 	
 	public int getHistoryIndex() {
 		return mHistoryIndex;
 	}
-	
-	public void erasePlaylistHistory(){
-		mHistoryIndex=-1;
-		mPlaylistHistory = new LinkedList<IPlaylist<Track>>();
-	}
-	
+
 	public int getHistorySize() {
 		return mPlaylistHistory.size();
 	}
 		
 	public void setHistoryIndex(int index) {
 		mHistoryIndex = index;
+	}
+
+	public IPlaylist<Track> getHistoryPlaylist(String playlistName) {
+		if (playlistName==null || playlistName.isEmpty()) return null;
+		for (IPlaylist<Track> playlist: mPlaylistHistory)
+            {
+                Log.e("", "PLAYLISTS SEARCH "+playlist.getTitle()+" FOR "+playlistName);
+                if (playlistName.equals(playlist.getTitle())) return playlist;
+            }
+		return null;
+	}
+
+	public IPlaylist<Track> getFavoritesPlaylist() {
+		return getHistoryPlaylist(getFavoritesTitle());
 	}
 	
 	public int getHomeIndex() {
@@ -334,12 +353,6 @@ public class MusicData {
 		//mCurrentPlaylist.setCurrentTrackIndex(trackPosition);
 		return mMusicService.playTrack(track);
 	}*/
-	/**
-	 * to call from tracklist frag
-	 * @param trackPosition
-	 * @param track
-	 * @return
-	 */
 	public boolean playTrack(int trackPosition, IPlaylist playlist) {
 		if (mCurrentPlaylist!=null) mCurrentPlaylist.deselect();
 		Track track = (Track) playlist.getTrack(trackPosition);
@@ -379,7 +392,15 @@ public class MusicData {
 				mCurrentPlaylist.setTitle(playlist);
 				addPlaylistToHistory(mCurrentPlaylist);
 				mHistoryIndex = mPlaylistHistory.size()-1;
-
+                if (playlist.equals(getFavoritesTitle())) {
+                    for (int i = 0; i < mPlaylistHistory.size(); i++) {
+                        IPlaylist<Track> pl =  mPlaylistHistory.get(i);
+                        if (pl.getTitle().equals(playlist)) {
+                            mHistoryIndex = i;
+                            break;
+                        }
+                    }
+                }
 				return mMusicService.prepareTrack(tracks[trackPosition], prepare);
 	}
 	
@@ -440,9 +461,42 @@ public class MusicData {
 	public String getRecentTitle() {
 		return mMusicService.getResources().getString(R.string.recent_playlist_title);
 	}
-	
+
+	/**
+	 *
+	 * @return returns true if current track is in favorites, false if current track is not in favorites
+	 */
 	public boolean fromToFavorites() {
-		return getPlaylistDbHelper().saveTrackToPlaylist(getFavoritesTitle(), getCurrentTrack());
+        //TODO: after the first app install, removal of a track from Favoriites list e.g. disliking it calls MP.onCompletion()
+        //TODO: thus causes playNext(). Investigate
+		IPlaylist<Track> favorites = getFavoritesPlaylist();
+        //Log.e(LOG_TAG, "FAV"+ favorites);
+		if (favorites==null) return false;
+		int indexInFavorites = favorites.getTracks().indexOf(getCurrentTrack());
+
+        //Track trackInFav = favorites.getTracks().get(favorites.getPlaylistSize() - 1);
+        //Track current = getCurrentTrack();
+        //boolean equal = getCurrentTrack().equals(trackInFav);
+        //boolean equal1 = current.getTitle().equals(trackInFav.getTitle());
+        //boolean equal2 = getCurrentTrack().equals(trackInFav);
+        //boolean equal3 = getCurrentTrack().equals(trackInFav);
+        //Log.e(LOG_TAG, "EQUALS " + equal+" "+(getCurrentTrack().getTitle()==trackInFav.getTitle())+" "+(getCurrentTrack().getAlbum()==trackInFav.getAlbum())+" " + (getCurrentTrack().getArtist()==trackInFav.getArtist()));
+        //Log.e(LOG_TAG, "FROMTOFAV CUR TRACK"+getCurrentTrack());
+        //for (Track t:favorites.getTracks()) {
+        //    Log.e(LOG_TAG,"TRACK IN FAV"+t.getTitle());
+        //}
+        //Log.e(LOG_TAG, "INDEX IN FAV"+ indexInFavorites);
+		if (indexInFavorites>=0) {
+			boolean removed = getPlaylistDbHelper().removeTrackFromPlaylist(favorites, indexInFavorites);
+			//Log.e(LOG_TAG, "REMOVED"+removed);
+			if (removed) {
+                favorites.remove(indexInFavorites, false);
+                return false;
+            }
+		}
+        boolean saved = getPlaylistDbHelper().saveTrackToPlaylist(getFavoritesTitle(), getCurrentTrack());
+        if (saved) favorites.add(getCurrentTrack(), false);
+		return saved;
 	}
 	
 	
@@ -487,59 +541,68 @@ public class MusicData {
 			}*/
 			setCurrentTrackIndex(-1);
 		}
-		
-		public Track remove(int position) {
+
+
+        public Track remove(int position) {
+            return remove(position, true);
+        }
+
+		public Track remove(int position, boolean generateUndoEvent) {
 			//Log.e("REMOVE", "POS "+position+" CURRENT "+ mCurrentTrackIndex);
 			int currentPlayingTrack = mCurrentTrackIndex;
 			mLastRemovedIndex = position;
-			MainActivity.handleUndoAction(new Undoable(){
+			if (generateUndoEvent)
+				MainActivity.handleUndoAction(new Undoable(){
 
-				private int pos = mLastRemovedIndex;
-				private Track item = getTrack(pos).clone();
-				@Override
-				public void undo() {
+					private int pos = mLastRemovedIndex;
+					private Track item = getTrack(pos).clone();
+					@Override
+					public void undo() {
 					//we temporarily disable undo to prevent "add(pos, item)" operation from creating its own undo event
-					boolean oldUndoEnabled = mUndoEnabled;
-					mUndoEnabled = false;
-					add(pos, item);
-					mUndoEnabled = oldUndoEnabled;
+						boolean oldUndoEnabled = mUndoEnabled;
+						mUndoEnabled = false;
+						add(pos, item);
+						mUndoEnabled = oldUndoEnabled;
 					//if (mAdapter!=null) mAdapter.notifyDataSetChanged();
-				}
+					}
 
 				@Override
 				public String getUndoMessage() {
 					return "Undo removal";
 				}
-				
-			});
-			
-			if (((position==mCurrentTrackIndex && position==playlist.size()-1)||
-				(position < mCurrentTrackIndex))&&isHomePlaylist()) {
-					setCurrentTrackIndex(mCurrentTrackIndex-1);
+
+				});
+
+				if (((position==mCurrentTrackIndex && position==playlist.size()-1)||
+					(position < mCurrentTrackIndex))&&isHomePlaylist()) {
+				setCurrentTrackIndex(mCurrentTrackIndex-1);
 			}
 			//Log.e("REMOVE", "POS "+position+" CURRENT "+ mCurrentTrackIndex);
 			Track item = playlist.remove(position);
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
-			
+
 			if (!isHomePlaylist()) return item;
-	    	if (mCurrentTrackIndex==-1) {
-	    		mMusicService.stopMusic();
-	    		mMusicService.prepareTrack(new Track("", "", "", "", ""), true);
-	    		return item;
-	    	}
-	    	if (position==currentPlayingTrack) {//(position==currentPlayingTrack&&mMusicData.isPlaying())
-	    		if (mMusicService.isPlaying())
-	    			playTrack(mCurrentTrackIndex, this);
-	    		else {
-	    			Track track = getTrack(mCurrentTrackIndex);
-	    			mCurrentPlaylist = this;
-	    			mCurrentPlaylist.setCurrentTrackIndex(mCurrentTrackIndex);
-	    			mMusicService.prepareTrack(track, true);
-	    		}
-	    	}
+			if (mCurrentTrackIndex==-1) {
+				mMusicService.stopMusic();
+				mMusicService.prepareTrack(new Track("", "", "", "", ""), true);
+				return item;
+			}
+			if (position==currentPlayingTrack) {//(position==currentPlayingTrack&&mMusicData.isPlaying())
+				if (mMusicService.isPlaying())
+					playTrack(mCurrentTrackIndex, this);
+				else {
+					Track track = getTrack(mCurrentTrackIndex);
+					mCurrentPlaylist = this;
+					mCurrentPlaylist.setCurrentTrackIndex(mCurrentTrackIndex);
+					mMusicService.prepareTrack(track, true);
+				}
+			}
+
+			if (mMusicService.isShuffle) mMusicService.shufflePlaylist();
+
 			return item;
 		}
-		
+
 		public boolean add( int position, Track item) {
 			return add(position, item, true);
 		}
@@ -552,6 +615,7 @@ public class MusicData {
 			if (generateUndoEvent) MainActivity.handleUndoAction(getAddUndoHandler(position, 1));
 			playlist.add(position, item);
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
+			if (mMusicService.isShuffle) mMusicService.shufflePlaylist();
 			return true;
 		}
 		
@@ -564,6 +628,7 @@ public class MusicData {
 			if (generateUndoEvent) MainActivity.handleUndoAction(getAddUndoHandler(playlist.size(), 1));
 			playlist.add(track);
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
+			if (mMusicService.isShuffle) mMusicService.shufflePlaylist();
 			return true;
 		}
 		
@@ -577,6 +642,7 @@ public class MusicData {
 			Collections.addAll(playlist, tracks);
 			
 			if (mAdapter!=null) mAdapter.notifyDataSetChanged();
+			if (mMusicService.isShuffle) mMusicService.shufflePlaylist();
 			return true;
 		}
 		
@@ -671,7 +737,9 @@ public class MusicData {
 			return playlist.toArray(temp_track);
 		}
 		
-		
+		public void notifyAdapterDataSetChanged(){
+            if (mAdapter!=null) mAdapter.notifyDataSetChanged();
+        }
 		
 		//IMPORTANT:this should be used only in ArrayAdapters. All direct interaction with playlist should be prohibited
 		/*public ArrayList<Track> getTracksList() {

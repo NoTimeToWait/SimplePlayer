@@ -1,10 +1,33 @@
 package com.notime2wait.simpleplayer;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Observable;
-import java.util.Observer;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.media.AudioManager;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Parcel;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentTabHost;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.SeekBar;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
 import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu.OnCloseListener;
@@ -15,54 +38,9 @@ import com.notime2wait.simpleplayer.fragments.IBackHandledFragment.BackHandlerIn
 import com.notime2wait.simpleplayer.visualization.IVisuals;
 import com.notime2wait.simpleplayer.visualization.WaveformUtils;
 
-import se.emilsjolander.stickylistheaders.StickyListHeadersAdapter;
-import se.emilsjolander.stickylistheaders.StickyListHeadersListView;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnCompletionListener;
-import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Parcel;
-import android.provider.MediaStore;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentTabHost;
-import android.support.v4.content.CursorLoader;
-import android.support.v4.content.LocalBroadcastManager;
-import android.text.TextUtils;
-import android.text.TextUtils.TruncateAt;
-import android.util.AttributeSet;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.BaseAdapter;
-import android.widget.FrameLayout;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.SeekBar;
-import android.widget.TextView;
-import android.widget.Toast;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class MainActivity extends FragmentActivity 
 		implements SeekBar.OnSeekBarChangeListener, BackHandlerInterface{
@@ -299,6 +277,8 @@ public class MainActivity extends FragmentActivity
     		if (getMusicData().getCurrentPlaylist().getPlaylistSize()==0 
     				|| getMusicData().getCurrentPlaylist().getTitle().equals(getMusicData().getFavoritesTitle()) ) {
     			if (tracks==null || tracks.length==0) return;
+                if (playlistTitle.equals(getMusicData().getFavoritesTitle()))
+                    playlistTitle = getResources().getString(R.string.recent)+" "+getMusicData().getFavoritesTitle();
     			getMusicData().prepareTracks(playlistTitle, tracknum, tracks, true);
     			mMusicService.seekTo(playerPosition);
     		
@@ -553,13 +533,29 @@ public class MainActivity extends FragmentActivity
     	view.setVisibility(View.VISIBLE);
     	switch (index) {
     		case 5:
-    			((ImageView)view.findViewById(R.id.inner_icon)).setImageResource(R.drawable.fav_icon_small);
+    			final ImageView innerIcon = (ImageView)view.findViewById(R.id.inner_icon);
+				innerIcon.setImageResource(R.drawable.fav_icon_small);
+
+				mMusicService.registerObserver(new MusicServiceObserver() {
+					public void update(Bundle extras, int source) {
+						if ((source&MusicService.SOURCE_TRACK_CHANGED)==MusicService.SOURCE_TRACK_CHANGED && extras.containsKey("track")) {
+							IPlaylist<Track> favorites = getMusicData().getFavoritesPlaylist();
+							boolean favoritesHasCurrentTrack = favorites.getTracks().contains((Track) extras.getParcelable("track"));
+							innerIcon.setAlpha(favoritesHasCurrentTrack? 1.0f : 0.5f);
+						}
+						//if (mBtn.setImageResource((source & MusicService.SOURCE_MUSIC_PLAY) == 0 ? R.drawable.btn_play_icn : R.drawable.btn_pause_icn);
+					}
+				});
     			view.setOnClickListener(new OnClickListener() {
-    				@Override
-    				public void onClick(View v) {
-    	    			getMusicData().fromToFavorites();
-    	    		}
-    	    	});
+                    @Override
+                    public void onClick(View v) {
+                        boolean fromTo = getMusicData().fromToFavorites();
+                        innerIcon.setAlpha(fromTo? 1.0f : 0.5f);
+                        String text = getResources().getString(fromTo? R.string.added_to : R.string.removed_from)+" "+getResources().getString(R.string.favorites_playlist_title);
+                        Toast toast = Toast.makeText(MainActivity.this, text , Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+                });
     			break;
     		case 4:
     			((ImageView)view.findViewById(R.id.inner_icon)).setImageResource(R.drawable.pref_icon_small);
@@ -576,20 +572,51 @@ public class MainActivity extends FragmentActivity
     			view.setOnClickListener(new OnClickListener() {
     				@Override
     				public void onClick(View v) {
+                        mPreferencesTabs.setCurrentTabByTag("tracklist");
     					slidingMenu.showMenu();
     				}
     			});
     		break;
+			case 2:
+                final ImageView shuffleIcon = ((ImageView)view.findViewById(R.id.inner_icon));
+                shuffleIcon.setImageResource(R.drawable.shuffle_icon_small);
+                shuffleIcon.setAlpha(mMusicService.isShuffle? 1.0f : 0.5f);
+                view.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (!mMusicService.isShuffle) mMusicService.shufflePlaylist();
+                        mMusicService.isShuffle = !mMusicService.isShuffle;
+                        shuffleIcon.setAlpha(mMusicService.isShuffle? 1.0f : 0.5f);
+						String text = getResources().getString(R.string.shuffle_mode)+" "+getResources().getString(mMusicService.isShuffle?R.string.is_on : R.string.is_off);
+						Toast toast = Toast.makeText(MainActivity.this, text , Toast.LENGTH_SHORT);
+						toast.show();
+                    }
+                });
+			break;
     		case 1:
-    			((ImageView)view.findViewById(R.id.inner_icon)).setImageResource(R.drawable.repeat_icon_small);
+                final ImageView repeatIcon = ((ImageView)view.findViewById(R.id.inner_icon));
+                repeatIcon.setImageResource(R.drawable.repeat_icon_small);
+                repeatIcon.setAlpha(mMusicService.isRepeat ? 1.0f : 0.5f);
+                view.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        mMusicService.isRepeat = !mMusicService.isRepeat;
+                        repeatIcon.setAlpha(mMusicService.isRepeat ? 1.0f : 0.5f);
+						String text = getResources().getString(R.string.repeat_mode)+" "+getResources().getString(mMusicService.isRepeat?R.string.is_on : R.string.is_off);
+						Toast toast = Toast.makeText(MainActivity.this, text , Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+                });
     		break;
     		case 0:
-    			((ImageView)view.findViewById(R.id.inner_icon)).setImageResource(R.drawable.open_icon_small);
+                final ImageView openIcon =((ImageView)view.findViewById(R.id.inner_icon));
+                openIcon.setImageResource(R.drawable.open_icon_small);
     		break;
     	}
     	return view;
 	}
-	
+
+
     private ImageButton getButtonNext(){
 
         ImageButton mBtnNext = (ImageButton) findViewById(R.id.btn_next);
@@ -774,7 +801,10 @@ public class MainActivity extends FragmentActivity
     @Override
     protected void onStop() {
         super.onStop(); 
-        if (isFinishing()) mMusicService.unregisterObserver(null);
+        if (isFinishing()) {
+			getMusicData().clearHistory();
+			mMusicService.unregisterObserver(null);
+		}
     }
     
     @Override

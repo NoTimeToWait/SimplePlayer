@@ -1,17 +1,17 @@
 package com.notime2wait.simpleplayer.fragments;
 
 
-import com.notime2wait.simpleplayer.MainActivity;
-import com.notime2wait.simpleplayer.R;
-import com.notime2wait.simpleplayer.R.id;
-
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTabHost;
-import android.support.v4.app.ListFragment;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
+
+import com.notime2wait.simpleplayer.MainActivity;
+import com.notime2wait.simpleplayer.R;
 
 public class PreferencesTabs extends Fragment{
 	
@@ -29,14 +29,20 @@ public class PreferencesTabs extends Fragment{
         mTabHost = new FragmentTabHost(getActivity());//mTabHost = (FragmentTabHost) getView().findViewById(android.R.id.tabhost);
        //TODO should i set 
         mTabHost.setup(getActivity(), getChildFragmentManager(), R.id.realtabcontent2);
-        
-        mTabHost.addTab(mTabHost.newTabSpec("equalizer").setIndicator("Equalizer"),
+
+
+		mTabHost.addTab(mTabHost.newTabSpec("equalizer").setIndicator("Equalizer"),
                 EqualizerFrag.class, null);
         mTabHost.addTab(mTabHost.newTabSpec("preferences").setIndicator("Preferences"),
                 OptionsFrag.class, null);
         /*mTabHost.addTab(mTabHost.newTabSpec("waveform").setIndicator("Wave"),
                 TempWaveformFrag.class, null);
         */
+		for(int i=0;i<mTabHost.getTabWidget().getChildCount();i++)
+		{
+			TextView tv = (TextView) mTabHost.getTabWidget().getChildAt(i).findViewById(android.R.id.title);
+			tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+		}
         MainActivity.setPreferencesTabHost(mTabHost);
         return mTabHost;
     }

@@ -24,8 +24,9 @@
     <style name="SPTabWidget" parent="@android:style/Widget.Holo.TabWidget">
     <item name="android:textAppearance">@style/SPTabWidgetText</item>
 	</style>
-	<style name="SPTabWidgetText">
-   		<item name="android:textSize">12sp</item>
+	<style name="SPTabWidgetText" parent="@android:style/TextAppearance.Holo.Widget.TabWidget">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
 	</style>
     
     <style name="fade_animation">

@@ -5,6 +5,8 @@ import android.os.Parcelable;
 
 public class Track implements Parcelable {
 
+	public static String LOG_TAG = Track.class.getName();
+
 	private String title;
 	private String path;
 	private String album;
@@ -86,5 +88,27 @@ public class Track implements Parcelable {
 		dest.writeString(album);
 		dest.writeString(artist);
 		dest.writeString(albumArt);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Track other = (Track) obj;
+		if (!title.equals(other.title))	return false;
+		if (!album.equals(other.album))	return false;
+		if (!artist.equals(other.artist)) return false;
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = 1;
+		result = 37*result+title.hashCode();
+		result = 37*result+album.hashCode();
+		result = 37*result+artist.hashCode();
+		return result;
 	}
 }

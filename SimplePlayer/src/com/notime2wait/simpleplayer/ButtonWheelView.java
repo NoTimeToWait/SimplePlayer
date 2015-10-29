@@ -1,16 +1,13 @@
 package com.notime2wait.simpleplayer;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
-import android.view.animation.AnimationSet;
 import android.view.animation.AnimationUtils;
+import android.widget.ImageView;
 
 public class ButtonWheelView extends ViewGroup{
 	
@@ -39,12 +36,13 @@ public class ButtonWheelView extends ViewGroup{
     }
     
     public void addHeaderView(View child){
+        final ImageView openIcon = ((ImageView)child.findViewById(R.id.inner_icon));
     	child.setOnClickListener(new OnClickListener() {
 
 			@Override
 			public void onClick(View view) {
 				animateLayout();
-				//Log.e("", "ANIMATE");
+                openIcon.setImageResource(isOpened()? R.drawable.close_icon_small : R.drawable.open_icon_small);
 			}
         });
     	addView(child, 0);
@@ -54,8 +52,8 @@ public class ButtonWheelView extends ViewGroup{
     public boolean dispatchTouchEvent(MotionEvent ev) {
         float xVector = pivotX - ev.getX();
         float yVector = ev.getY() - pivotY;
-        double angle = Math.atan2(yVector, xVector)+Math.PI;
-        double factor = 2*Math.PI/getChildCount();
+        float angle = (float)Math.atan2(yVector, xVector)+ (float)Math.PI;
+        float factor = (float) (2*Math.PI/getChildCount());
         angle += factor/2; //since we have the 0 element centered vertically on circumference
         int index = (int) (angle/factor);
         index %= getChildCount();

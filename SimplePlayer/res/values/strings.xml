@@ -11,4 +11,12 @@
     
     <string name="favorites_playlist_title">Favorites</string>
 	<string name="recent_playlist_title">Recent</string>
+    <string name="recent">Recent</string>
+    <string name="added_to">Added to</string>
+    <string name="removed_from">Removed from</string>
+
+    <string name="shuffle_mode">Shuffle mode</string>
+    <string name="repeat_mode">Repeat mode</string>
+    <string name="is_on"> is ON</string>
+    <string name="is_off"> is OFF</string>
 </resources>

@@ -1,17 +1,16 @@
 package com.notime2wait.simpleplayer.fragments;
 
-import com.notime2wait.simpleplayer.MainActivity;
-import com.notime2wait.simpleplayer.R;
-import com.notime2wait.simpleplayer.R.id;
-
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTabHost;
-import android.support.v4.app.ListFragment;
-import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
+
+import com.notime2wait.simpleplayer.MainActivity;
+import com.notime2wait.simpleplayer.R;
 
 public class TrackListTabs extends Fragment{
 	
@@ -29,7 +28,6 @@ public class TrackListTabs extends Fragment{
         mTabHost = new FragmentTabHost(getActivity());//mTabHost = (FragmentTabHost) getView().findViewById(android.R.id.tabhost);
        //TODO should i set 
         mTabHost.setup(getActivity(), getChildFragmentManager(), R.id.realtabcontent);
-
         mTabHost.addTab(mTabHost.newTabSpec("tracklist").setIndicator("Now Playing"),
                 TrackListFrag.class, null);
         mTabHost.addTab(mTabHost.newTabSpec("directory").setIndicator("Folders"),
@@ -39,6 +37,14 @@ public class TrackListTabs extends Fragment{
        // mTabHost.addTab(mTabHost.newTabSpec("AllMusicTab").setIndicator("All Music"),
        //         AllMusicListFrag.class, null);
         mTabHost.setCurrentTabByTag("directory");
+        //int childCount = mTabHost.getTabWidget().getChildCount();
+        //String text = ((TextView) mTabHost.getTabWidget().getChildAt(1).findViewById(android.R.id.title)).getText().toString();
+        //float textSize = ((TextView) mTabHost.getTabWidget().getChildAt(1).findViewById(android.R.id.title)).getTextSize();
+        for(int i=0;i<mTabHost.getTabWidget().getChildCount();i++)
+        {
+            TextView tv = (TextView) mTabHost.getTabWidget().getChildAt(i).findViewById(android.R.id.title);
+            tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        }
         MainActivity.setTracklistTabHost(mTabHost);
         return mTabHost;
     }

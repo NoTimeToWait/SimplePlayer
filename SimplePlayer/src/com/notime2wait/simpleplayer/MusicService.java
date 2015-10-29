@@ -1,8 +1,5 @@
 package com.notime2wait.simpleplayer;
 
-import com.notime2wait.simpleplayer.visualization.IVisuals;
-import com.notime2wait.simpleplayer.visualization.WaveformUtils;
-
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -10,28 +7,25 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
 import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.media.MediaPlayer;
-import android.media.MediaPlayer.*;
-import android.os.AsyncTask;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.media.MediaPlayer.OnErrorListener;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Observer;
+import java.util.Random;
 import java.util.Set;
 
 public class MusicService extends Service {
@@ -60,6 +54,12 @@ public class MusicService extends Service {
     //private RemoteControlReceiver mRemoteControlReceiver;
     private boolean mAudioFocusGranted = false;
     private boolean wasPlayingOnFocusChange = false;
+
+	public boolean isShuffle;
+	public boolean isRepeat;
+	//private ListIterator<Track> shuffledPlaylistIterator;
+	private ArrayList<Track> shuffledPlaylist;
+	private int shuffledIndex;
     
     private final Set<MusicServiceObserver> observers = new HashSet<MusicServiceObserver>();
     
@@ -161,9 +161,9 @@ public class MusicService extends Service {
 	}
 	
 	public void start() {
-		//mPlayer.setVolume(0.8f, 0.9f);
+		mPlayer.setVolume(0.8f, 0.9f);
 		mPlayer.start();
-		notifyObservers(null,0);
+		notifyObservers(null, 0);
 		if (mRemoteViews!=null ) {
 			mRemoteViews.setImageViewResource(R.id.btn_ntf_play, R.drawable.btn_pause_icn);
 			updateNotification();
@@ -172,7 +172,7 @@ public class MusicService extends Service {
 	
 	public void pause() {
 		mPlayer.pause();
-		notifyObservers(null,0);
+		notifyObservers(null, 0);
 		if (mRemoteViews!=null) {
 			mRemoteViews.setImageViewResource(R.id.btn_ntf_play, R.drawable.btn_play_icn);
 			updateNotification();
@@ -224,19 +224,61 @@ public class MusicService extends Service {
 		prepareTrack(track, false);
 		return true;
     }
-	
-	
+
+	public void shufflePlaylist() {
+		shuffledPlaylist = new ArrayList<Track>();
+		shuffledPlaylist.addAll(mMusicData.getCurrentPlaylist().getTracks());
+		shuffledPlaylist.remove(mMusicData.getCurrentTrack());
+		Collections.shuffle(shuffledPlaylist, new Random(System.nanoTime()));
+		shuffledPlaylist.add(0, mMusicData.getCurrentTrack());
+		//shuffledPlaylistIterator = shuffledPlaylist.listIterator();
+		shuffledIndex = 0;
+	}
 	
 	private Track getCurrentTrack() {
     	return mMusicData.getCurrentPlaylist().getCurrentTrack();
     }
 	
     private Track getNextTrack() {
-    	return mMusicData.getCurrentPlaylist().getNext();
+		Track next = null;
+		if (isShuffle) {
+			if (shuffledIndex >= shuffledPlaylist.size()-1 && isRepeat) {
+				//shuffledPlaylistIterator = shuffledPlaylist.listIterator();
+				//next = shuffledPlaylistIterator.next();
+				shuffledIndex = -1;
+				//next = shuffledPlaylist.get(shuffledIndex);
+			}
+
+			if (shuffledIndex < shuffledPlaylist.size()-1) {
+				next = shuffledPlaylist.get(++shuffledIndex);
+				int index = mMusicData.getCurrentPlaylist().getTracks().indexOf(next);
+				mMusicData.getCurrentPlaylist().setCurrentTrackIndex(index);
+			}
+		}
+    	else next = mMusicData.getCurrentPlaylist().getNext();
+		if (next==null && isRepeat) next = mMusicData.getCurrentPlaylist().getFirst();
+		return next;
     }
+
     
     private Track getPrevTrack() {
-    	return mMusicData.getCurrentPlaylist().getPrev();
+		Track prev = null;
+		if (isShuffle) {
+			if (shuffledIndex==0&&isRepeat) {
+				//shuffledPlaylistIterator = shuffledPlaylist.listIterator(shuffledPlaylist.size());
+				//prev = shuffledPlaylistIterator.previous();
+				shuffledIndex = shuffledPlaylist.size();
+				//prev = shuffledPlaylist.get(shuffledIndex);
+			}
+			if (shuffledIndex>0) {
+				prev = shuffledPlaylist.get(--shuffledIndex);
+				int index = mMusicData.getCurrentPlaylist().getTracks().indexOf(prev);
+				mMusicData.getCurrentPlaylist().setCurrentTrackIndex(index);
+			}
+		}
+		else prev = mMusicData.getCurrentPlaylist().getPrev();
+		if (prev==null && isRepeat) prev = mMusicData.getCurrentPlaylist().getLast();
+		return prev;
     }
     /*
     private Track getRandomTrack() {

@@ -1,23 +1,25 @@
 package com.notime2wait.simpleplayer.fragments;
 
-import com.notime2wait.simpleplayer.MainActivity;
-import com.notime2wait.simpleplayer.MusicData;
-import com.notime2wait.simpleplayer.PlaylistDbHelper;
-import com.notime2wait.simpleplayer.R;
-import com.notime2wait.simpleplayer.SwipeDismissListViewTouchListener;
-import com.notime2wait.simpleplayer.Track;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.CursorAdapter;
-import android.view.*;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import com.notime2wait.simpleplayer.MainActivity;
+import com.notime2wait.simpleplayer.MusicData;
+import com.notime2wait.simpleplayer.PlaylistDbHelper;
+import com.notime2wait.simpleplayer.R;
+import com.notime2wait.simpleplayer.SwipeDismissListViewTouchListener;
+import com.notime2wait.simpleplayer.Track;
 
 
 public class PlaylistsFrag extends BackHandledListFragment implements LoaderCallbacks<Cursor>{
@@ -104,9 +106,6 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 		  }
 		  //TODO:
 		  else {
-			  
-			  
-
 				//if (MainActivity.DEBUG) Log.e(LOG_TAG, "ssssss"+position);
 			  mMusicData.playTracks(openedPlaylist, position, openedPlaylistTracks);
 			  //TODO
@@ -160,44 +159,45 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 	}
 	  
 	private CursorAdapter getplaylistAdapter() {
-		
+		CursorAdapter result = new CursorAdapter(getActivity(), null, 0) {
+			@Override
+			public void bindView(View view, Context context, Cursor cursor) {
+				TextView name = (TextView)view.findViewById(R.id.title);
+				name.setText(cursor.getString(cursor.getColumnIndex(isPlaylistView?
+						PlaylistDbHelper.PlaylistEntry.COLUMN_TITLE :
+						PlaylistDbHelper.TracklistEntry.COLUMN_TITLE)));
+			}
+
+			@Override
+			public View newView(Context context , Cursor cursor, ViewGroup parent) {
+				LayoutInflater inflater = getActivity().getLayoutInflater();
+				View playlistView = inflater.inflate(isPlaylistView?R.layout.folderlist_item:R.layout.tracklist_item, parent, false);
+				return playlistView;
+			}
+
+			public View getView(int position, View convertView, ViewGroup parent) {
+				View view = convertView;
+				if (view == null) {
+					LayoutInflater inflater = getActivity().getLayoutInflater();
+					view = inflater.inflate(isPlaylistView?R.layout.folderlist_item:R.layout.tracklist_item, parent, false);
+				}
+
+				TextView name = (TextView)view.findViewById(R.id.title);
+				Cursor cursor = this.getCursor();
+				if (cursor == null) return view;
+				cursor.moveToPosition(position);
+				name.setText(cursor.getString(cursor.getColumnIndex(isPlaylistView?
+						PlaylistDbHelper.PlaylistEntry.COLUMN_TITLE :
+						PlaylistDbHelper.TracklistEntry.COLUMN_TITLE)));
+
+				return view;
+			}
+		};
+		MainActivity.getMusicData().getPlaylistDbHelper().setLoader(getLoaderManager().getLoader(this.getId()));
 		//String[] from = new String[] { PlaylistDbHelper., DB.COLUMN_TXT };
 	    //int[] to = new int[] { R.id.ivImg, R.id.tvText };
 		//return new SimpleCursorAdapter(getActivity(), R.layout.folderlist_item, null, playlists, null, 0);
-	    return new CursorAdapter(getActivity(), null, 0) {
-	    	@Override
-	        public void bindView(View view, Context context, Cursor cursor) {
-	    		TextView name = (TextView)view.findViewById(R.id.title);
-	    		name.setText(cursor.getString(cursor.getColumnIndex(isPlaylistView?
-	    															PlaylistDbHelper.PlaylistEntry.COLUMN_TITLE :
-	    															PlaylistDbHelper.TracklistEntry.COLUMN_TITLE)));
-	        }
-	    	
-	        @Override
-	        public View newView(Context context , Cursor cursor, ViewGroup parent) {
-	        	LayoutInflater inflater = getActivity().getLayoutInflater();
-		    	View playlistView = inflater.inflate(isPlaylistView?R.layout.folderlist_item:R.layout.tracklist_item, parent, false);
-	            return playlistView;
-	        }
-	    	
-	    	public View getView(int position, View convertView, ViewGroup parent) {
-			    View view = convertView;
-			    if (view == null) {
-			       LayoutInflater inflater = getActivity().getLayoutInflater();
-			    	view = inflater.inflate(isPlaylistView?R.layout.folderlist_item:R.layout.tracklist_item, parent, false);
-			    }
-
-			    TextView name = (TextView)view.findViewById(R.id.title);
-	    		Cursor cursor = this.getCursor();
-	    		if (cursor == null) return view;
-	    		cursor.moveToPosition(position);
-	    		name.setText(cursor.getString(cursor.getColumnIndex(isPlaylistView?
-												PlaylistDbHelper.PlaylistEntry.COLUMN_TITLE :
-												PlaylistDbHelper.TracklistEntry.COLUMN_TITLE)));
-
-			    return view;
-			  }
-	    };
+	    return result;
 		 
 	}
 	
@@ -213,6 +213,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 			isPlaylistView = true;
 			getLoaderManager().getLoader(this.getId()).forceLoad();
 			MainActivity.handleUndoAction(null); //hide any popups produced by this fragment
+			MainActivity.getMusicData().getPlaylistDbHelper().setLoader(null);
 		}
 
 	@Override
