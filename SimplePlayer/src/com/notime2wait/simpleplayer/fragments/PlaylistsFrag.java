@@ -28,7 +28,6 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 	
 	private int HEADER_LISTNUM_OFFSET = 0;
 	private CursorAdapter playlistAdapter;
-	private MusicData mMusicData;
 	private Track[] openedPlaylistTracks;
 	private String openedPlaylist;
 	private boolean isPlaylistView = true;
@@ -38,7 +37,6 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 		@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		mMusicData = MainActivity.getMusicData();
 		
 		
 	}
@@ -66,19 +64,19 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
                             @Override
                             public void onDismiss(ListView listView, int[] reverseSortedPositions) {
                             	if (isPlaylistView) {
-                            		PlaylistDbHelper dbHelper = MainActivity.getMusicData().getPlaylistDbHelper();
+                            		PlaylistDbHelper dbHelper = MusicData.getInstance().getPlaylistDbHelper();
                         			//SQLiteDatabase db = dbHelper.getReadableDatabase();
                             		for (int position : reverseSortedPositions) {
                             			
                             			String playlistName = ((TextView)getViewByPosition(listView, position).findViewById(R.id.title)).getText().toString();
                             			Cursor cursor = dbHelper.getTracklist(playlistName);
-                       		         	
-                            			mMusicData.addTracksToPlaylist(mMusicData.getTracks(cursor));
+
+										MusicData.getInstance().addTracksToPlaylist(MusicData.getInstance().getTracks(cursor));
                             		}
                             	}
                             	else 
                             		for (int position : reverseSortedPositions) {
-                                        mMusicData.addTrackToPlaylist(openedPlaylistTracks[position]);
+										MusicData.getInstance().addTrackToPlaylist(openedPlaylistTracks[position]);
                                 		}
                             }
                             
@@ -106,8 +104,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 		  }
 		  //TODO:
 		  else {
-				//if (MainActivity.DEBUG) Log.e(LOG_TAG, "ssssss"+position);
-			  mMusicData.playTracks(openedPlaylist, position, openedPlaylistTracks);
+			  MusicData.getInstance().playTracks(openedPlaylist, position, openedPlaylistTracks);
 			  //TODO
 			  MainActivity.slidingMenu.showContent(true);
 		  }
@@ -193,7 +190,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 				return view;
 			}
 		};
-		MainActivity.getMusicData().getPlaylistDbHelper().setLoader(getLoaderManager().getLoader(this.getId()));
+		MusicData.getInstance().getPlaylistDbHelper().setLoader(getLoaderManager().getLoader(this.getId()));
 		//String[] from = new String[] { PlaylistDbHelper., DB.COLUMN_TXT };
 	    //int[] to = new int[] { R.id.ivImg, R.id.tvText };
 		//return new SimpleCursorAdapter(getActivity(), R.layout.folderlist_item, null, playlists, null, 0);
@@ -213,7 +210,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 			isPlaylistView = true;
 			getLoaderManager().getLoader(this.getId()).forceLoad();
 			MainActivity.handleUndoAction(null); //hide any popups produced by this fragment
-			MainActivity.getMusicData().getPlaylistDbHelper().setLoader(null);
+			MusicData.getInstance().getPlaylistDbHelper().setLoader(null);
 		}
 
 	@Override
@@ -253,9 +250,8 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 		
 		@Override
 		public Cursor loadInBackground() {
-			PlaylistDbHelper dbHelper = MainActivity.getMusicData().getPlaylistDbHelper();
+			PlaylistDbHelper dbHelper = MusicData.getInstance().getPlaylistDbHelper();
 			//SQLiteDatabase db = dbHelper.getReadableDatabase();
-			//if (MainActivity.DEBUG) Log.e("SSSSSSSSS", ""+fragment.openedPlaylist());
 		         Cursor cursor = (fragment.openedPlaylist() == null)? dbHelper.getPlaylists() : dbHelper.getTracklist(fragment.openedPlaylist());
 		         //if (cursor != null) {
 		         //    cursor.getCount();
@@ -276,7 +272,7 @@ public class PlaylistsFrag extends BackHandledListFragment implements LoaderCall
 		if (loader.getId() == this.getId())	{
 			playlistAdapter.swapCursor(newCursor);
 			setListAdapter(playlistAdapter);
-			if (!isPlaylistView) openedPlaylistTracks = mMusicData.getTracks(newCursor);
+			if (!isPlaylistView) openedPlaylistTracks = MusicData.getInstance().getTracks(newCursor);
 			//this.getListView().setAdapter(playlistAdapter);
 			else restoreScrollState();
 		}

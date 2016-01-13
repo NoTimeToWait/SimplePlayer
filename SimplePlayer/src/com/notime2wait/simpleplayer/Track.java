@@ -45,7 +45,7 @@ public class Track implements Parcelable {
 	public String getAlbumArt(boolean dbCheck) {
 		String art;
 		if (dbCheck&&(albumArt==null||albumArt.isEmpty())) {
-			art = MainActivity.getMusicData().getArt(this); 
+			art = MusicData.getInstance().getArt(this);
 			if (art==null||art.isEmpty()) albumArt = "none";
 			else albumArt = art;
 		}

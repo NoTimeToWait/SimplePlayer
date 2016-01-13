@@ -74,7 +74,7 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-    	if (MainActivity.DEBUG) Log.e(LOG_TAG,
+    	if (MainActivity.DEBUG) Log.i(LOG_TAG,
     	        "Upgrading database from version " + oldVersion + " to "
     	            + newVersion + ", which will destroy all old data");
     	db.execSQL(SQL_DELETE_PLAYLIST_TABLE);
@@ -220,7 +220,7 @@ public class PlaylistDbHelper extends SQLiteOpenHelper {
     	whereClause = TracklistEntry.COLUMN_PLAYLIST_NAME + "=? AND " + TracklistEntry.COLUMN_TITLE + "=? AND " + TracklistEntry.COLUMN_TRACKNUM  + "=?";
 		int deleted = db.delete(TRACKLIST_TABLE_NAME, whereClause , new String[] {playlist.getTitle(), track.getTitle(), String.valueOf(trackNum)});
 		if (mPlFragmentLoader!=null) mPlFragmentLoader.forceLoad();
-		Log.e(LOG_TAG, "DELETED "+deleted);
+		Log.i(LOG_TAG, "DELETED "+deleted);
     	return deleted>0;
     }
     

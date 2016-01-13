@@ -44,7 +44,6 @@ import java.io.IOException;
 
 public class MainActivity extends FragmentActivity 
 		implements SeekBar.OnSeekBarChangeListener, BackHandlerInterface{
-	//implements AdapterView.OnItemClickListener, StickyListHeadersListView.OnHeaderClickListener {
 
     //private TestBaseAdapter mAdapter;
 	private static String LOG_TAG = MainActivity.class.getName(); 
@@ -101,11 +100,11 @@ public class MainActivity extends FragmentActivity
 			mMusicService = null;
 		}
 	};
-		
+
 	public static MusicData getMusicData() {
-		return mMusicService.getMusicData();
+		return MusicData.getInstance();
 	}
-	
+
 	public static int getSessionId() {
 		return mMusicService.getSessionId();
 	}
@@ -151,8 +150,8 @@ public class MainActivity extends FragmentActivity
 	    state.writeInt(playlist.getCurrentTrackIndex());
 	    state.writeTypedArray(playlist.getTracksArray(), flags);
 	    state.writeIntArray(mVisuals.getHeights()==null? new int[0] : mVisuals.getHeights());
-	    if (mVisuals.getHeights()==null) Log.e(LOG_TAG, "MVISUALS null heights");
-	    else Log.e(LOG_TAG, "MVISUALS"+ mVisuals.getHeights().length);
+	    if (mVisuals.getHeights()==null) Log.d(LOG_TAG, "MVISUALS null heights");
+	    else Log.d(LOG_TAG, "MVISUALS"+ mVisuals.getHeights().length);
 	}
 	/*
 	public static IVisuals getVisuals() {
@@ -161,7 +160,6 @@ public class MainActivity extends FragmentActivity
 	//call only from onServiceConnected method
 	public void prepare() {
 
-    	Log.e("", "Created");
 		slidingMenu = (SlidingMenu) findViewById(R.id.slidingmenu);
         slidingMenu.setMode(SlidingMenu.LEFT_RIGHT);
         slidingMenu.setSecondaryMenu(R.layout.right_slide);
@@ -213,7 +211,7 @@ public class MainActivity extends FragmentActivity
 					BitmapDrawable drawable = new BitmapDrawable(getResources(), cachedBitmap);
 					drawable.setBounds(mWaveformBounds);
 
-					Log.e("", "mBOUNDS "+drawable.getBounds().right+" "+drawable.getBounds().bottom);
+					Log.d("", "mBOUNDS "+drawable.getBounds().right+" "+drawable.getBounds().bottom);
 					/*ViewGroup.LayoutParams lp =  mProgressBar.getLayoutParams();
 		             lp.width = drawable.getBounds().width();
 		             mProgressBar.setLayoutParams(lp);*/
@@ -223,9 +221,9 @@ public class MainActivity extends FragmentActivity
 					 
 					 mProgressBar.setProgressDrawable(drawable);
 					 Rect bounds = mProgressBar.getProgressDrawable().getBounds();
-					 Log.e("", "BOUNDS "+bounds.right+" "+bounds.bottom);
+					 Log.d("", "BOUNDS "+bounds.right+" "+bounds.bottom);
 		             
-		             Log.e("" , "mProgressBar.width " + mProgressBar.getWidth() + " mProgressBar.h " + mProgressBar.getHeight());
+		             Log.d("" , "mProgressBar.width " + mProgressBar.getWidth() + " mProgressBar.h " + mProgressBar.getHeight());
 				}
            	 
             });
@@ -274,7 +272,7 @@ public class MainActivity extends FragmentActivity
     		int tracknum = p.readInt();
     		Track[] tracks = p.createTypedArray(Track.CREATOR);
     		    		
-    		if (getMusicData().getCurrentPlaylist().getPlaylistSize()==0 
+    		if (getMusicData().getCurrentPlaylist().getPlaylistSize()==0
     				|| getMusicData().getCurrentPlaylist().getTitle().equals(getMusicData().getFavoritesTitle()) ) {
     			if (tracks==null || tracks.length==0) return;
                 if (playlistTitle.equals(getMusicData().getFavoritesTitle()))
@@ -324,7 +322,6 @@ public class MainActivity extends FragmentActivity
                 mHandler.postDelayed(updateProgressBarTask, 1);
                                  //mVisuals.setTrack(track);
                 if (trackTitle.equals(track.getTitle())) {
-                	Log.e("", "From Int Array");
                 	mVisuals.calculateWaveform(p.createIntArray());
                 }
                 else mVisuals.calculateWaveform(track);
@@ -667,7 +664,7 @@ public class MainActivity extends FragmentActivity
  
             @Override
             public void onClick(View v) {
-                if(getMusicData().getCurrentPlaylist().getPlaylistSize()==0) return; 
+                if(getMusicData().getCurrentPlaylist().getPlaylistSize()==0) return;
                 if (!mMusicService.requestAudioFocus()) return;
                 
                 //DO NOT DELETE
@@ -677,8 +674,7 @@ public class MainActivity extends FragmentActivity
                 LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(intent);
                 
                 		//mMusicService.pause();
-                    	
-                    	//if (DEBUG) Log.e("WWWWW", "PPPPP");
+
                         // Changing button image to play button
                         //mBtn.setBackgroundResource(R.drawable.btn_play);
                 		//Intent intent = new Intent(MusicService.ACTION_PLAY);

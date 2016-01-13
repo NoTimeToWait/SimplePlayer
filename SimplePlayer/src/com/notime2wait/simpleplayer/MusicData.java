@@ -27,7 +27,7 @@ public class MusicData {
 	private static String LOG_TAG = MusicData.class.getName();
 	
 	
-	private MusicService mMusicService;
+	private static MusicService mMusicService;
 	
 	//private Uri musicSourceUri; 
 
@@ -61,17 +61,29 @@ public class MusicData {
 	private boolean mUndoEnabled = true;
 	//TODO: add current playlist int num
 	//private int mCurrentTrackIndex;
+
+	private static MusicData mMusicData = null;
+
+	public static MusicData getInstance() {
+		if (mMusicData==null) mMusicData = new MusicData();
+		return mMusicData;
+	}
+
+	private MusicData() {
+		if (mMusicService!=null) {
+			mFolderTracks = new TreeMap<String, ArrayList<Track>>();
+			getMusicList(false);
+			mPlaylistDbHelper = new PlaylistDbHelper(mMusicService);
+			clearHistory();
+		}
+	}
 	
 	public void setUndoEnabled(boolean undoEnabled) {
 		mUndoEnabled = undoEnabled;
 	}
 	
-	public void init(MusicService service) {
-		mFolderTracks = new TreeMap<String, ArrayList<Track>>();
+	public static void init(MusicService service) {
 		mMusicService = service;
-		getMusicList(false);
-		mPlaylistDbHelper = new PlaylistDbHelper(mMusicService);
-		clearHistory();
 	}
 	
 	public String getArt(Track track) {
@@ -151,7 +163,7 @@ public class MusicData {
 		if (playlistName==null || playlistName.isEmpty()) return null;
 		for (IPlaylist<Track> playlist: mPlaylistHistory)
             {
-                Log.e("", "PLAYLISTS SEARCH "+playlist.getTitle()+" FOR "+playlistName);
+                Log.d("", "PLAYLISTS SEARCH "+playlist.getTitle()+" FOR "+playlistName);
                 if (playlistName.equals(playlist.getTitle())) return playlist;
             }
 		return null;

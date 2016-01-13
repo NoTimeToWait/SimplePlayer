@@ -33,7 +33,7 @@ public class MusicService extends Service {
 	
 	private final IBinder mBinder = new ServiceBinder();
 	private boolean justStarted = true;
-	private static final MusicData mMusicData = new MusicData();
+	//private static final MusicData mMusicData = new MusicData();
 	
 	public static String INTENT_CATEGORY = "com.notime2wait.simpleplayer.player_intent";
 	public static String ACTION_NEXT = "com.notime2wait.simpleplayer.next_track";
@@ -96,11 +96,7 @@ public class MusicService extends Service {
     public static MediaPlayer getMediaPlayer() {
     	return mPlayer;
     }
-    
-	public static MusicData getMusicData() {
-		return mMusicData;
-	}
-			
+
 	@Override
 	public IBinder onBind(Intent arg0) {
 		return mBinder;
@@ -227,16 +223,17 @@ public class MusicService extends Service {
 
 	public void shufflePlaylist() {
 		shuffledPlaylist = new ArrayList<Track>();
-		shuffledPlaylist.addAll(mMusicData.getCurrentPlaylist().getTracks());
-		shuffledPlaylist.remove(mMusicData.getCurrentTrack());
+		shuffledPlaylist.addAll(getCurrentPlaylist().getTracks());
+		shuffledPlaylist.remove(getCurrentPlaylist().getCurrentTrack());
 		Collections.shuffle(shuffledPlaylist, new Random(System.nanoTime()));
-		shuffledPlaylist.add(0, mMusicData.getCurrentTrack());
+		shuffledPlaylist.add(0, getCurrentPlaylist().getCurrentTrack());
 		//shuffledPlaylistIterator = shuffledPlaylist.listIterator();
 		shuffledIndex = 0;
 	}
-	
-	private Track getCurrentTrack() {
-    	return mMusicData.getCurrentPlaylist().getCurrentTrack();
+
+
+    private IPlaylist<Track> getCurrentPlaylist() {
+        return MusicData.getInstance().getCurrentPlaylist();
     }
 	
     private Track getNextTrack() {
@@ -251,12 +248,12 @@ public class MusicService extends Service {
 
 			if (shuffledIndex < shuffledPlaylist.size()-1) {
 				next = shuffledPlaylist.get(++shuffledIndex);
-				int index = mMusicData.getCurrentPlaylist().getTracks().indexOf(next);
-				mMusicData.getCurrentPlaylist().setCurrentTrackIndex(index);
+				int index = getCurrentPlaylist().getTracks().indexOf(next);
+				getCurrentPlaylist().setCurrentTrackIndex(index);
 			}
 		}
-    	else next = mMusicData.getCurrentPlaylist().getNext();
-		if (next==null && isRepeat) next = mMusicData.getCurrentPlaylist().getFirst();
+    	else next = getCurrentPlaylist().getNext();
+		if (next==null && isRepeat) next = getCurrentPlaylist().getFirst();
 		return next;
     }
 
@@ -272,12 +269,12 @@ public class MusicService extends Service {
 			}
 			if (shuffledIndex>0) {
 				prev = shuffledPlaylist.get(--shuffledIndex);
-				int index = mMusicData.getCurrentPlaylist().getTracks().indexOf(prev);
-				mMusicData.getCurrentPlaylist().setCurrentTrackIndex(index);
+				int index = getCurrentPlaylist().getTracks().indexOf(prev);
+				getCurrentPlaylist().setCurrentTrackIndex(index);
 			}
 		}
-		else prev = mMusicData.getCurrentPlaylist().getPrev();
-		if (prev==null && isRepeat) prev = mMusicData.getCurrentPlaylist().getLast();
+		else prev = getCurrentPlaylist().getPrev();
+		if (prev==null && isRepeat) prev = getCurrentPlaylist().getLast();
 		return prev;
     }
     /*
@@ -287,20 +284,21 @@ public class MusicService extends Service {
 	*/
 	@Override
     public void onCreate (){
-	  super.onCreate();
-	  if (mBroadcastReceiver==null) {
-		  IntentFilter filter = new IntentFilter();
-		  filter.addAction(ACTION_NEXT);
-		  filter.addAction(ACTION_PREV);
-		  filter.addAction(ACTION_PLAY);
-		  //filter.addAction(ACTION_PAUSE);
-		  mBroadcastReceiver = new BroadcastReceiver() {
+	    super.onCreate();
+        MusicData.init(this);
+	    if (mBroadcastReceiver==null) {
+		    IntentFilter filter = new IntentFilter();
+		    filter.addAction(ACTION_NEXT);
+		    filter.addAction(ACTION_PREV);
+		    filter.addAction(ACTION_PLAY);
+		    //filter.addAction(ACTION_PAUSE);
+		    mBroadcastReceiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
-				Log.e("CONTEXT"+context, "INTENT"+intent.getAction());
+				Log.d("CONTEXT"+context, "INTENT"+intent.getAction());
 
 				String action = intent.getAction();
-				if (mMusicData.getCurrentPlaylist().getPlaylistSize()==0) return;
+				if (getCurrentPlaylist().getPlaylistSize()==0) return;
 				if (ACTION_NEXT.equals(action)) playNext();
 				if (ACTION_PREV.equals(action)) playPrevious();
 				if (ACTION_PLAY.equals(action)) {
@@ -312,34 +310,33 @@ public class MusicService extends Service {
 		  };
 		  //this.registerReceiver(mBroadcastReceiver, filter);
 
-		  LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, filter);
-	  }
+		    LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, filter);
+	    }
 	  
-	  if (mHeadsetStateReceiver==null) {
-		  IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
-		  filter.addAction(ACTION_NEXT);
-		  mHeadsetStateReceiver = new BroadcastReceiver() {
+	    if (mHeadsetStateReceiver==null) {
+		    IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
+		    filter.addAction(ACTION_NEXT);
+		    mHeadsetStateReceiver = new BroadcastReceiver() {
 		  @Override
 			public void onReceive(Context context, Intent intent) {
 				if (intent.getIntExtra("state", 1)==0) pause();
 				
 			}
 		  };
-		  registerReceiver(mHeadsetStateReceiver, filter);
-	  }
-	  
-	   mMusicData.init(this);
+		    registerReceiver(mHeadsetStateReceiver, filter);
+	    }
+
        
 
-	   mPlayer.setOnCompletionListener( new OnCompletionListener() {
+	    mPlayer.setOnCompletionListener( new OnCompletionListener() {
 		   @Override
 		    public void onCompletion(MediaPlayer mp) {
 				playNext();
 		        // check for repeat is ON or OFF
 				/**/
 		    }
-	   });
-       mPlayer.setOnErrorListener(new OnErrorListener() {
+	    });
+        mPlayer.setOnErrorListener(new OnErrorListener() {
 
         	@Override
         	public boolean onError(MediaPlayer mp, int what, int extra) {
@@ -355,7 +352,7 @@ public class MusicService extends Service {
         		else Toast.makeText(MusicService.this, "music player failed", Toast.LENGTH_SHORT).show();
         		return false;
         	}
-    	  });
+        });
 	}
 
 	public class ServiceBinder extends Binder {
@@ -399,7 +396,7 @@ public class MusicService extends Service {
 		PendingIntent nextPIntent = PendingIntent.getBroadcast(this, 1, nextIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 		mRemoteViews.setOnClickPendingIntent(R.id.btn_ntf_next, nextPIntent);
 		
-		Track track = mMusicData.getCurrentTrack();
+		Track track = getCurrentPlaylist().getCurrentTrack();
 		mRemoteViews.setTextViewText(R.id.notification_descr, track.getTitle()/*+" - "+track.getArtist()*/);
 		//mRemoteViews.setImageViewBitmap(R.id.notification_icon, mMusicData.get)
 		startForeground(1, mNotificationBuilder.build());

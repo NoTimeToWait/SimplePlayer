@@ -4,7 +4,6 @@ import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -53,11 +52,11 @@ public class TrackListFrag extends ListFragment{
 	
 	
 
-	
+
 		@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		mMusicData = MainActivity.getMusicData();
+		mMusicData = MusicData.getInstance();
 	}
 		
 	@Override
@@ -101,7 +100,7 @@ public class TrackListFrag extends ListFragment{
 	        }
 	        public void beforeTextChanged(CharSequence s, int start, int count, int after){}
 	        public void onTextChanged(CharSequence s, int start, int before, int count){}
-	    }); 
+	    });
 		this.mTracklistPrev = (ImageButton) mHeaderView.findViewById(R.id.btn_tracklist_prev);
 		this.mTracklistNext = (ImageButton) mHeaderView.findViewById(R.id.btn_tracklist_next);
 		this.mTracklistSave = (ImageButton) mHeaderView.findViewById(R.id.btn_tracklist_save);
@@ -110,7 +109,7 @@ public class TrackListFrag extends ListFragment{
 			 public void onClick(View v) {
 				 	//mPlaylistHistory.add(mPlaylist);
 			      //show message
-				 
+
 				    ((DragSortListView)getListView()).unregisterObserver(mAdapter);
 				    if (!mHistoryButtonFlag){
 						 mPlaylistHistory.previous();
@@ -122,7 +121,7 @@ public class TrackListFrag extends ListFragment{
 				 	if (mTracklistNext.getVisibility() == View.INVISIBLE)
 				 		mTracklistNext.setVisibility(View.VISIBLE);
 				 	if (!mPlaylistHistory.hasPrevious()) mTracklistPrev.setVisibility(View.INVISIBLE);
-				 	
+
 
 					mPlaylistName.setText(mPlaylist.getTitle());
 					mAdapter = getTrackListAdapter();
@@ -145,7 +144,7 @@ public class TrackListFrag extends ListFragment{
 				 	if (mTracklistPrev.getVisibility() == View.INVISIBLE)
 				 		mTracklistPrev.setVisibility(View.VISIBLE);
 				 	if (!mPlaylistHistory.hasNext()) mTracklistNext.setVisibility(View.INVISIBLE);
-				 	
+
 					mPlaylistName.setText(mPlaylist.getTitle());
 					mAdapter = getTrackListAdapter();
 				    setListAdapter(mAdapter);
@@ -154,7 +153,7 @@ public class TrackListFrag extends ListFragment{
 		
 		mTracklistSave.setOnClickListener( new OnClickListener(){
 			 public void onClick(View v) {
-				 
+
 				 PlaylistDbHelper dbHelper = mMusicData.getPlaylistDbHelper();
 				 //SQLiteDatabase db = dbHelper.getWritableDatabase();
 				 dbHelper.savePlaylist(mPlaylist);
@@ -183,7 +182,7 @@ public class TrackListFrag extends ListFragment{
 		}
 		return true;
 	}
-	
+
 /*
 	private void prepareHistoryIterator() {
 		//if (mHomePlaylist !=  mMusicData.getHistoryIndex()) 
@@ -218,7 +217,6 @@ public class TrackListFrag extends ListFragment{
 		//listView.setDropListener(getDropListener());
 		//listView.setRemoveListener(getRemoveListener());
 
-		if (MainActivity.DEBUG) Log.e("QQQQQQQ", "SSSSSS");
 	    mAdapter = getTrackListAdapter();
 	    setListAdapter(mAdapter);
 	    /*
@@ -267,7 +265,7 @@ public class TrackListFrag extends ListFragment{
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		  //v.setBackgroundColor(color.background_light);
 			  mMusicData.playTrack(position-HEADER_LISTNUM_OFFSET, mPlaylist);
-			  //mHomePlaylist = mMusicData.getHistoryIndex(); 
+			  //mHomePlaylist = mMusicData.getHistoryIndex();
 			  MainActivity.slidingMenu.showContent(true);
 		  
 	}

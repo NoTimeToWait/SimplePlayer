@@ -1,18 +1,22 @@
 package com.notime2wait.simpleplayer.fragments;
 
-import java.util.Arrays;
-import java.util.Comparator;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
+
 import com.notime2wait.simpleplayer.MainActivity;
 import com.notime2wait.simpleplayer.MusicData;
 import com.notime2wait.simpleplayer.R;
 import com.notime2wait.simpleplayer.SwipeDismissListViewTouchListener;
 import com.notime2wait.simpleplayer.Track;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.*;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.TextView;
+
+import java.util.Arrays;
+import java.util.Comparator;
 
 
 public class DirectoryListFrag extends BackHandledListFragment{
@@ -233,7 +237,6 @@ public class DirectoryListFrag extends BackHandledListFragment{
 
 	@Override
 	public boolean onBackPressed() {
-//TODO: add back handling
 		if (!isFolderView && MainActivity.slidingMenu.isMenuShowing()) {
 			/* returns back to menu from the front slide - deprecated
 			 * if (!MainActivity.slidingMenu.isMenuShowing()) {

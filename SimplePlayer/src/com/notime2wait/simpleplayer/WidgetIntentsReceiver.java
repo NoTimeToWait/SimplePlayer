@@ -10,7 +10,7 @@ public class WidgetIntentsReceiver extends BroadcastReceiver {
 	
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		Log.e("CONTEXT"+context, "INTENT"+intent.getAction());
+		if (MainActivity.DEBUG) Log.d("CONTEXT"+context, "INTENT"+intent.getAction());
 		LocalBroadcastManager manager = LocalBroadcastManager.getInstance(context);
 	    if (manager == null) return;
 	    
